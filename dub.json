@@ -1,0 +1,14 @@
+{
+	"name": "gadget",
+	"authors": [
+		"Giacomo Parolini"
+	],
+	"description": "A small 2D physics engine",
+	"copyright": "Copyright © 2017, Giacomo Parolini",
+	"license": "Zlib",
+	"libs": [ "phobos2" ],
+	"dependencies": {
+		"derelict-gl3": "*",
+		"derelict-sfml2": "*"
+	}
+}
