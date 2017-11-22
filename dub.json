@@ -3,7 +3,7 @@
 	"authors": [
 		"Giacomo Parolini"
 	],
-	"description": "A small 2D physics engine",
+	"description": "A small physics and rendering engine",
 	"copyright": "Copyright © 2017, Giacomo Parolini",
 	"license": "Zlib",
 	"libs": [ "phobos2" ],

@@ -1,7 +1,12 @@
-import gadget.physics;
 import std.stdio;
+import std.file;
+import gadget.physics;
+import gadget.rendering;
+import derelict.sfml2.window;
+import derelict.opengl3.gl3;
 
 void main() {
+	/+
 	vec2 v = vec2(2, 3);
 	writeln(v.x, ", ", v.y);
 
@@ -16,32 +21,41 @@ void main() {
 	PhysicsObj obj = PhysicsObj(a, v, v, 0.4f);
 	PhysicsWorld world = new PhysicsWorld();
 	world.add(obj);
+	+/
 
-	//sf::RenderWindow w(sf::VideoMode(640, 480), "Test gadget");
-	//w.setFramerateLimit(60);
+	//// Init rendering system
+	initRender();
+	auto window = newWindow(800, 600);
 
-	/*sf::RectangleShape r(sf::Vector2f(50, 50));
-	r.setPosition(50, 200);
-	while (w.isOpen()) {
-		sf::Event evt;
-		while (w.pollEvent(evt)) {
-			switch (evt.type) {
-			case sf::Event::Closed:
-				w.close();
-				break;
-			case sf::Event::KeyPressed:
-				switch (evt.key.code) {
-				case sf::Keyboard::Q:
-					w.close();
-					break;
-				default: break;
-				}
-			default: break;
-			}
+	auto basicShader = new Shader(getcwd() ~ "/shaders/basic.vert", getcwd() ~ "/shaders/basic.frag");
+	auto quadVAO = genQuad();
+
+	debug writeln("starting render loop");
+	renderLoop(window, &processInput, () {
+		basicShader.use();
+		drawTriangles(quadVAO, quadIndices.length);
+	});
+}
+
+void processInput(in sfEvent event) {
+	switch (event.type) {
+	case sfEvtResized:
+		handleResize(event);
+		break;
+	// FIXME: fires automatically?
+	//case sfEvtClosed:
+		//gr.quitRender();
+		//break;
+	case sfEvtKeyPressed:
+		switch (event.key.code) {
+		case sfKeyQ:
+			quitRender();
+			break;
+		default:
+			break;
 		}
-
-		w.clear();
-		w.draw(r);
-		w.display();
-	}*/
+		break;
+	default:
+		break;
+	}
 }

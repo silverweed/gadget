@@ -1,52 +1,59 @@
 module gadget.rendering.shader;
 
-import std.typecons : Nullable;
 import std.file : readText;
 import std.stdio;
-import std.format;
+import std.format : format;
+import std.string : toStringz;
 import derelict.opengl3.gl3;
 import gadget.rendering.c_utils : NULL;
 import gl3n.linalg;
 
 class Shader {
-	this(string vsPath, string fsPath, Nullable!string gsPath = null) {
-		char* vsCode, fsCode, gsCode;
+	this(string vsPath, string fsPath, string gsPath = null) {
+		string vsCode, fsCode, gsCode;
 		try {
 			// Read the code from shader files
-			vsCode = readText(vsPath).dup.ptr;
-			fsCode = readText(fsPath).dup.ptr;
-			if (!gsPath.isNull)
-				gsCode = readText(gsPath).dup.ptr;
+			vsCode = readText(vsPath);
+			fsCode = readText(fsPath);
+			if (gsPath != null)
+				gsCode = readText(gsPath);
 		} catch (Exception e) {
 			stderr.writefln("Shader %s + %s %s failed to load: %s".format(
-				vsPath, fsPath, gsPath.isNull ? "" : "+ " ~ gsPath,
+				vsPath, fsPath, gsPath == null ? "" : "+ " ~ gsPath,
 				e.toString()));
 		}
 		// Compile the shaders
+		debug writeln("compiling vertex shader");
 		const vsId = glCreateShader(GL_VERTEX_SHADER);
-		glShaderSource(vsId, 1, &vsCode, null);
+		const char* vsCodePtr = vsCode.toStringz();
+		glShaderSource(vsId, 1, &vsCodePtr, null);
 		glCompileShader(vsId);
 		checkErr!"Vertex"(vsId);
 
+		debug writeln("compiling fragment shader");
 		const fsId = glCreateShader(GL_FRAGMENT_SHADER);
-		glShaderSource(fsId, 1, &fsCode, null);
+		const char* fsCodePtr = fsCode.toStringz();
+		glShaderSource(fsId, 1, &fsCodePtr, null);
 		glCompileShader(fsId);
 		checkErr!"Fragment"(fsId);
 
-		int gsId = -1;
-		if (!gsPath.isNull) {
+		GLint gsId = -1;
+		if (gsPath != null) {
+			debug writeln("compiling geometry shader");
 			gsId = glCreateShader(GL_GEOMETRY_SHADER);
-			glShaderSource(gsId, 1, &gsCode, null);
+			const char* gsCodePtr = gsCode.toStringz();
+			glShaderSource(gsId, 1, &gsCodePtr, null);
 			glCompileShader(gsId);
 			checkErr!"Geometry"(gsId);
 		}
-		id = glCreateProgram();
-		glAttachShader(id, vsId);
-		glAttachShader(id, fsId);
+		_id = glCreateProgram();
+		glAttachShader(_id, vsId);
+		glAttachShader(_id, fsId);
 		if (gsId >= 0)
-			glAttachShader(id, gsId);
-		glLinkProgram(id);
-		checkErr!"Program"(id);
+			glAttachShader(_id, gsId);
+		debug writeln("linking shader");
+		glLinkProgram(_id);
+		checkErr!"Program"(_id);
 		// Cleanup
 		glDeleteShader(vsId);
 		glDeleteShader(fsId);
@@ -54,41 +61,46 @@ class Shader {
 			glDeleteShader(gsId);
 	}
 
-	void use() immutable {
-		glUseProgram(id);
+	int id() const { return _id; }
+
+	/// Sets this shader as current.
+	void use() const {
+		glUseProgram(_id);
 	}
 
-	void setVal(T)(in string name, T val) immutable {
-		static if (is(T == bool) || T.isImplicitlyConvertible!int) {
-			glUniform1i(glGetUniformLocation(id, cast(const(char*))name), cast(int)val);
-		} else static if (T.isImplicitlyConvertible!float) {
-			glUniform1f(glGetUniformLocation(id, cast(const(char*))name), cast(float)val);
+	/// Sets a uniform to `val`.
+	void setUni(T)(in string name, T val) const {
+		static if (is(T == bool) || T.isImplicitlyConvertible!GLint) {
+			glUniform1i(glGetUniformLocation(_id, cast(const(char*))name), cast(GLint)val);
+		} else static if (T.isImplicitlyConvertible!GLfloat) {
+			glUniform1f(glGetUniformLocation(_id, cast(const(char*))name), val);
 		} else static if (is(T == vec2)) {
-			glUniform2fv(glGetUniformLocation(id, cast(const(char*))name), 1, val);
+			glUniform2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
 		} else static if (is(T == vec3)) {
-			glUniform3fv(glGetUniformLocation(id, cast(const(char*))name), 1, val);
+			glUniform3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
 		} else static if (is(T == vec4)) {
-			glUniform4fv(glGetUniformLocation(id, cast(const(char*))name), 1, val);
+			glUniform4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
 		} else static if (is(T == mat2)) {
-			glUniformMatrix2fv(glGetUniformLocation(id, cast(const(char*))name), 1, val);
+			glUniformMatrix2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
 		} else static if (is(T == mat3)) {
-			glUniformMatrix3fv(glGetUniformLocation(id, cast(const(char*))name), 1, val);
+			glUniformMatrix3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
 		} else static if (is(T == mat4)) {
-			glUniformMatrix4fv(glGetUniformLocation(id, cast(const(char*))name), 1, val);
+			glUniformMatrix4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
 		} else {
 			static assert(0);
 		}
 	}
 
-	void setVal(T...)(in string name, T vals) immutable {
-		static if(T.isImplicitlyConvertible!float) {
+	/// Sets a uniform array to `vals`
+	void setUni(T...)(in string name, T vals) const {
+		static if(T.isImplicitlyConvertible!GLfloat) {
 			static if (vals.length == 2) {
-				glUniform2f(glGetUniformLocation(id, cast(const(char*))name), vals[0], vals[1]);
+				glUniform2f(glGetUniformLocation(_id, cast(const(char*))name), vals[0], vals[1]);
 			} else static if (vals.length == 3) {
-				glUniform3f(glGetUniformLocation(id, cast(const(char*))name),
+				glUniform3f(glGetUniformLocation(_id, cast(const(char*))name),
 						vals[0], vals[1], vals[2]);
 			} else static if (vals.length == 4) {
-				glUniform4f(glGetUniformLocation(id, cast(const(char*))name),
+				glUniform4f(glGetUniformLocation(_id, cast(const(char*))name),
 						vals[0], vals[1], vals[2], vals[3]);
 			} else {
 				static assert(0);
@@ -99,23 +111,23 @@ class Shader {
 	}
 
 private:
-	void checkErr(string type)(uint id) {
+	void checkErr(string type)(uint _id) {
 		int success = 0;
 		char[1024] infoLog;
-		static if (type == "Program") {
-			glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+		static if (type != "Program") {
+			glGetShaderiv(_id, GL_COMPILE_STATUS, &success);
 			if (!success) {
-				glGetShaderInfoLog(id, infoLog.length, NULL, infoLog.ptr);
+				glGetShaderInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
 				stderr.writeln("[ ERR ] ", type, " Shader failed to compile: ", infoLog);
 			}
 		} else {
-			glGetShaderiv(id, GL_LINK_STATUS, &success);
+			glGetProgramiv(_id, GL_LINK_STATUS, &success);
 			if (!success) {
-				glGetShaderInfoLog(id, infoLog.length, NULL, infoLog.ptr);
+				glGetShaderInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
 				stderr.writeln("[ ERR ] Shader failed to link: ", infoLog);
 			}
 		}
 	}
 
-	int id;
+	int _id;
 }

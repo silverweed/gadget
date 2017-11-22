@@ -3,18 +3,20 @@ module gadget.rendering.gl;
 import derelict.sfml2.system;
 import derelict.sfml2.window;
 import derelict.opengl3.gl3;
+import std.stdio;
 
 struct RenderInitOptions {
 	string sfmlSystemLib;
 	string sfmlWindowLib;
 }
 
-private auto defaultRenderInitOpts = RenderInitOptions(
+sfContextSettings ctxSettings;
+
+private immutable defaultRenderInitOpts = RenderInitOptions(
 	"/usr/lib/x86_64-linux-gnu/libcsfml-system.so.2.4",
 	"/usr/lib/x86_64-linux-gnu/libcsfml-window.so.2.4"
 );
-
-sfContextSettings ctxSettings;
+private bool running = true;
 
 /// Loads the rendering libraries (GL3 + SFML2) and sets the default context settings.
 bool initRender(in RenderInitOptions opts = defaultRenderInitOpts) {
@@ -37,4 +39,32 @@ auto newWindow(uint w, uint h, const char* title = "Unnamed Gadget App", uint fl
 	sfWindow_setActive(window, true);
 	DerelictGL3.reload();
 	return window;
+}
+
+void renderLoop(EH, RF)(sfWindow* window, EH evtHandler, RF rendFunc) {
+	while (running) {
+		sfEvent evt;
+		sfWindow_pollEvent(window, &evt);
+		evtHandler(evt);
+		
+		glClear(GL_COLOR_BUFFER_BIT);
+		rendFunc();
+		sfWindow_display(window);
+	}
+	debug writeln("Closing window.");
+	sfWindow_close(window);
+}
+
+void quitRender() {
+	running = false;
+}
+
+void handleResize(in sfEvent event) {
+	glViewport(0, 0, event.size.width, event.size.height);
+}
+
+void drawTriangles(GLuint vao, GLuint count) {
+	glBindVertexArray(vao);
+	glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, cast(const(void)*)0);
+	glBindVertexArray(0);
 }
