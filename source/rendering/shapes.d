@@ -55,7 +55,7 @@ immutable GLint[36] cubeIndices = [
 auto genShape(alias vertices, alias indices)() {
 	uint vbo, vao, ebo;
 
-	glGenBuffers(1, &vao);
+	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
 	glGenBuffers(1, &ebo);
 
