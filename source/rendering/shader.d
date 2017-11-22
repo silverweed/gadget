@@ -76,11 +76,11 @@ class Shader {
 		} else static if (isImplicitlyConvertible!(T, GLfloat)) {
 			glUniform1f(glGetUniformLocation(_id, cast(const(char*))name), val);
 		} else static if (is(T == vec2)) {
-			glUniform2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
+			glUniform2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
 		} else static if (is(T == vec3)) {
-			glUniform3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
+			glUniform3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
 		} else static if (is(T == vec4)) {
-			glUniform4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
+			glUniform4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
 		} else static if (is(T == mat2)) {
 			glUniformMatrix2fv(glGetUniformLocation(_id, cast(const(char*))name),
 					1, GL_FALSE, val.value_ptr);
