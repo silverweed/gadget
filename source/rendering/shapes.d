@@ -3,6 +3,11 @@ module gadget.rendering.shapes;
 import derelict.opengl3.gl3;
 debug import std.stdio;
 
+struct Vertex {
+	GLfloat[3] position;
+	GLfloat[3] normal;
+}
+
 /// Utility module to create basic 2d or 3d shapes
 
 immutable GLfloat[12] quadVertices = [
@@ -17,17 +22,48 @@ immutable GLint[6] quadIndices = [
 	1, 2, 3
 ];
 
-immutable GLfloat[24] cubeVertices = [
-	// front
-	-1.0, -1.0,  1.0,
-	1.0, -1.0,  1.0,
-	1.0,  1.0,  1.0,
-	-1.0,  1.0,  1.0,
-	// back
-	-1.0, -1.0, -1.0,
-	1.0, -1.0, -1.0,
-	1.0,  1.0, -1.0,
-	-1.0,  1.0, -1.0,
+immutable Vertex[36] cubeVertices = [
+	{ [-0.5f, -0.5f, -0.5f], [ 0.0f, 0.0f, -1.0f] },
+	{ [0.5f, -0.5f, -0.5f], [0.0f, 0.0f, -1.0f] },
+	{ [0.5f, 0.5f, -0.5f], [0.0f, 0.0f, -1.0f] },
+	{ [0.5f, 0.5f, -0.5f], [0.0f, 0.0f, -1.0f] },
+	{ [-0.5f, 0.5f, -0.5f], [ 0.0f, 0.0f, -1.0f] },
+	{ [-0.5f, -0.5f, -0.5f], [ 0.0f, 0.0f, -1.0f] },
+	
+	{ [-0.5f, -0.5f, 0.5f], [ 0.0f, 0.0f, 1.0f] },
+	{ [0.5f, -0.5f, 0.5f], [0.0f, 0.0f, 1.0f] },
+	{ [0.5f, 0.5f, 0.5f], [0.0f, 0.0f, 1.0f] },
+	{ [0.5f, 0.5f, 0.5f], [0.0f, 0.0f, 1.0f] },
+	{ [-0.5f, 0.5f, 0.5f], [ 0.0f, 0.0f, 1.0f] },
+	{ [-0.5f, -0.5f, 0.5f], [ 0.0f, 0.0f, 1.0f] },
+	
+	{ [-0.5f, 0.5f, 0.5f], [-1.0f, 0.0f, 0.0f] },
+	{ [-0.5f, 0.5f, -0.5f], [-1.0f, 0.0f, 0.0f] },
+	{ [-0.5f, -0.5f, -0.5f], [-1.0f, 0.0f, 0.0f] },
+	{ [-0.5f, -0.5f, -0.5f], [-1.0f, 0.0f, 0.0f] },
+	{ [-0.5f, -0.5f, 0.5f], [-1.0f, 0.0f, 0.0f] },
+	{ [-0.5f, 0.5f, 0.5f], [-1.0f, 0.0f, 0.0f] },
+	
+	{ [0.5f, 0.5f, 0.5f], [1.0f, 0.0f, 0.0f] },
+	{ [0.5f, 0.5f, -0.5f], [1.0f, 0.0f, 0.0f] },
+	{ [0.5f, -0.5f, -0.5f], [1.0f, 0.0f, 0.0f] },
+	{ [0.5f, -0.5f, -0.5f], [1.0f, 0.0f, 0.0f] },
+	{ [0.5f, -0.5f, 0.5f], [1.0f, 0.0f, 0.0f] },
+	{ [0.5f, 0.5f, 0.5f], [1.0f, 0.0f, 0.0f] },
+	
+	{ [-0.5f, -0.5f, -0.5f], [ 0.0f, -1.0f, 0.0f] },
+	{ [0.5f, -0.5f, -0.5f], [0.0f, -1.0f, 0.0f] },
+	{ [0.5f, -0.5f, 0.5f], [0.0f, -1.0f, 0.0f] },
+	{ [0.5f, -0.5f, 0.5f], [0.0f, -1.0f, 0.0f] },
+	{ [-0.5f, -0.5f, 0.5f], [ 0.0f, -1.0f, 0.0f] },
+	{ [-0.5f, -0.5f, -0.5f], [ 0.0f, -1.0f, 0.0f] },
+	
+	{ [-0.5f, 0.5f, -0.5f], [ 0.0f, 1.0f, 0.0f] },
+	{ [0.5f, 0.5f, -0.5f], [0.0f, 1.0f, 0.0f] },
+	{ [0.5f, 0.5f, 0.5f], [0.0f, 1.0f, 0.0f] },
+	{ [0.5f, 0.5f, 0.5f], [0.0f, 1.0f, 0.0f] },
+	{ [-0.5f, 0.5f, 0.5f], [ 0.0f, 1.0f, 0.0f] },
+	{ [-0.5f, 0.5f, -0.5f], [ 0.0f, 1.0f, 0.0f] }
 ];
 
 immutable GLint[36] cubeIndices = [
@@ -52,7 +88,8 @@ immutable GLint[36] cubeIndices = [
 ];
 
 // Configures a vertex array object to contain a shape. Returns the vao index.
-auto genShape(alias vertices, alias indices)() {
+// This shape is meant to be used with glDrawElements.
+auto genShapeElem(alias vertices, alias indices)() {
 	uint vbo, vao, ebo;
 
 	glGenVertexArrays(1, &vao);
@@ -81,10 +118,35 @@ auto genShape(alias vertices, alias indices)() {
 	return vao;
 }
 
+// Like genShapeElem but used with glDrawArrays
+auto genShape(alias vertices)() {
+	uint vao, vbo;
+
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(1, &vbo);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, vertices.sizeof, &vertices, GL_STATIC_DRAW);
+
+	glBindVertexArray(vao);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, Vertex.sizeof, cast(void*)Vertex.position.offsetof);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, Vertex.sizeof, cast(void*)Vertex.normal.offsetof);
+	glEnableVertexAttribArray(1);
+
+	// Unbind the buffer
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // must do this AFTER unbinding the vao
+
+	return vao;
+}
+
 auto genCube() {
-	return genShape!(cubeVertices, cubeIndices)();
+	return genShape!(cubeVertices)();
 }
 
 auto genQuad() {
-	return genShape!(quadVertices, quadIndices)();
+	return genShapeElem!(quadVertices, quadIndices)();
 }

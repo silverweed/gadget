@@ -68,3 +68,9 @@ void drawTriangles(GLuint vao, GLuint count) {
 	glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, cast(const(void)*)0);
 	glBindVertexArray(0);
 }
+
+void drawArrays(GLuint vao, GLuint count) {
+	glBindVertexArray(vao);
+	glDrawArrays(GL_TRIANGLES, 0, count);
+	glBindVertexArray(0);
+}

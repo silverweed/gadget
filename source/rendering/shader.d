@@ -2,6 +2,7 @@ module gadget.rendering.shader;
 
 import std.file : readText;
 import std.stdio;
+import std.traits;
 import std.format : format;
 import std.string : toStringz;
 import derelict.opengl3.gl3;
@@ -70,9 +71,9 @@ class Shader {
 
 	/// Sets a uniform to `val`.
 	void setUni(T)(in string name, T val) const {
-		static if (is(T == bool) || T.isImplicitlyConvertible!GLint) {
+		static if (is(T == bool) || isImplicitlyConvertible!(T, GLint)) {
 			glUniform1i(glGetUniformLocation(_id, cast(const(char*))name), cast(GLint)val);
-		} else static if (T.isImplicitlyConvertible!GLfloat) {
+		} else static if (isImplicitlyConvertible!(T, GLfloat)) {
 			glUniform1f(glGetUniformLocation(_id, cast(const(char*))name), val);
 		} else static if (is(T == vec2)) {
 			glUniform2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
@@ -81,11 +82,14 @@ class Shader {
 		} else static if (is(T == vec4)) {
 			glUniform4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
 		} else static if (is(T == mat2)) {
-			glUniformMatrix2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
+			glUniformMatrix2fv(glGetUniformLocation(_id, cast(const(char*))name),
+					1, GL_FALSE, val.value_ptr);
 		} else static if (is(T == mat3)) {
-			glUniformMatrix3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
+			glUniformMatrix3fv(glGetUniformLocation(_id, cast(const(char*))name),
+					1, GL_FALSE, val.value_ptr);
 		} else static if (is(T == mat4)) {
-			glUniformMatrix4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val);
+			glUniformMatrix4fv(glGetUniformLocation(_id, cast(const(char*))name),
+					1, GL_FALSE, val.value_ptr);
 		} else {
 			static assert(0);
 		}
@@ -93,7 +97,7 @@ class Shader {
 
 	/// Sets a uniform array to `vals`
 	void setUni(T...)(in string name, T vals) const {
-		static if(T.isImplicitlyConvertible!GLfloat) {
+		static if(isImplicitlyConvertible!(T[0], GLfloat)) {
 			static if (vals.length == 2) {
 				glUniform2f(glGetUniformLocation(_id, cast(const(char*))name), vals[0], vals[1]);
 			} else static if (vals.length == 3) {
