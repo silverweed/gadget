@@ -2,7 +2,8 @@ DC = dmd
 
 all: test
 
-GADGET_SRC := source/package.d source/collision.d source/types.d source/world.d
+GADGET_SRC := source/physics/package.d source/physics/collision.d \
+	source/physics/types.d source/physics/world.d
 
 #.PHONY: libgadget.a
 #libgadget.a:

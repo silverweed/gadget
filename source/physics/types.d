@@ -1,4 +1,4 @@
-module gadget.types;
+module gadget.physics.types;
 
 import std.variant;
 

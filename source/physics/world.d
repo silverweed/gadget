@@ -1,6 +1,6 @@
-module gadget.world;
+module gadget.physics.world;
 
-import gadget.types;
+import gadget.physics.types;
 
 class PhysicsWorld {
 

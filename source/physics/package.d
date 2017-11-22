@@ -1,5 +1,5 @@
-module gadget;
+module gadget.physics;
 
-public import gadget.collision;
-public import gadget.types;
-public import gadget.world;
+public import gadget.physics.collision;
+public import gadget.physics.types;
+public import gadget.physics.world;

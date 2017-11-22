@@ -1,4 +1,4 @@
-import gadget;
+import gadget.physics;
 import std.stdio;
 
 void main() {

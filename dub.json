@@ -9,6 +9,7 @@
 	"libs": [ "phobos2" ],
 	"dependencies": {
 		"derelict-gl3": "*",
-		"derelict-sfml2": "*"
+		"derelict-sfml2": "*",
+		"gl3n": "*"
 	}
 }

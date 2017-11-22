@@ -1,6 +1,6 @@
-module gadget.collision;
+module gadget.physics.collision;
 
-import gadget.types;
+import gadget.physics.types;
 
 bool AABBOverlapsAABB(in AABB a, in AABB b) pure @nogc {
 	 return !(a.max.x < b.min.x || a.min.x > b.max.x ||
