@@ -8,8 +8,8 @@
 	"license": "Zlib",
 	"libs": [ "phobos2" ],
 	"dependencies": {
-		"derelict-gl3": "*",
-		"derelict-sfml2": "*",
+		"derelict-gl3": "~>2.0.0-beta",
+		"derelict-sfml2": "~>4.0.0-beta",
 		"gl3n": "*"
 	}
 }

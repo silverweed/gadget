@@ -70,7 +70,7 @@ class Shader {
 	}
 
 	/// Sets a uniform to `val`.
-	void setUni(T)(in string name, T val) const {
+	void setUni(T)(in string name, inout T val) const {
 		static if (is(T == bool) || isImplicitlyConvertible!(T, GLint)) {
 			glUniform1i(glGetUniformLocation(_id, cast(const(char*))name), cast(GLint)val);
 		} else static if (isImplicitlyConvertible!(T, GLfloat)) {
@@ -96,7 +96,7 @@ class Shader {
 	}
 
 	/// Sets a uniform array to `vals`
-	void setUni(T...)(in string name, T vals) const {
+	void setUni(T...)(in string name, inout T vals) const {
 		static if(isImplicitlyConvertible!(T[0], GLfloat)) {
 			static if (vals.length == 2) {
 				glUniform2f(glGetUniformLocation(_id, cast(const(char*))name), vals[0], vals[1]);

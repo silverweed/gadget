@@ -46,16 +46,20 @@ void main() {
 
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 	auto basicShader = new Shader(getcwd() ~ "/shaders/basic.vert", getcwd() ~ "/shaders/basic.frag");
 	auto basicTransformShader = new Shader(getcwd() ~ "/shaders/basicTransform.vert", getcwd() ~ "/shaders/basic.frag");
 	auto basicLightingShader = new Shader(
 		getcwd() ~ "/shaders/basicLighting.vert",
 		getcwd() ~ "/shaders/basicLighting.frag");
+	auto sphereShader = new Shader(getcwd() ~ "/shaders/sphere.vert", 
+			getcwd() ~ "/shaders/sphere.frag",
+			getcwd() ~ "/shaders/sphere.geom");
 	auto quadVAO = genQuad();
 	auto cubeVAO = genCube();
+	auto pointVAO = genPoint();
 
 	auto opts = RenderOptions();
 	opts.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
@@ -69,10 +73,11 @@ void main() {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
+		const lightPos = vec3(2 * sin(t), 1f, 2 * cos(t));
 		basicLightingShader.use();
 		basicLightingShader.setUni("objectColor", 1f, 0.5f, 0.31f);
 		basicLightingShader.setUni("lightColor", 1f, 1f, 1f);
-		basicLightingShader.setUni("lightPos", 2 * sin(t), 1f, 2 * cos(t));
+		basicLightingShader.setUni("lightPos", lightPos);
 		basicLightingShader.setUni("viewPos", camera.position);
 		basicLightingShader.setUni("projection", mat4.perspective(6, 6, camera.fov, 0.1, 30f));
 		basicLightingShader.setUni("view", camera.viewMatrix);
@@ -80,9 +85,19 @@ void main() {
 				//.scale(1.0, 1.0, 1.0)
 				//.rotatex(0.2).rotatez(0.2).rotatey(0.25));
 			);
+		glEnable(GL_CULL_FACE);
 		drawArrays(cubeVAO, cubeVertices.length);
 		basicLightingShader.setUni("model", mat4.translation(2, 2, 0));
+		glDisable(GL_CULL_FACE);
 		drawElements(quadVAO, quadIndices.length);
+		// Draw light
+		sphereShader.use();
+		sphereShader.setUni("model", mat4.translation(lightPos));
+		sphereShader.setUni("view", camera.viewMatrix);
+		sphereShader.setUni("projection", mat4.perspective(6, 6, camera.fov, 0.1, 30f));
+		sphereShader.setUni("color", 1f, 1f, 0f);
+		sphereShader.setUni("radius", 0.5f);
+		drawArrays(pointVAO, 1);
 
 		// Hack to get mouse relative deltas for FPS camera
 		if (sfWindow_hasFocus(window)) {

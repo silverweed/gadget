@@ -10,6 +10,9 @@ struct Vertex {
 }
 
 /// Utility module to create basic 2d or 3d shapes
+immutable Vertex[1] pointVertices = [
+	{ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0] }
+];
 
 immutable GLfloat[12] quadVertices = [
 	0.5f,  0.5f, 0.0f,  // top right
@@ -68,6 +71,7 @@ immutable Vertex[36] cubeVertices = [
 	{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 1.0f] }
 ];
 
+/*
 immutable GLint[36] cubeIndices = [
 	// front
 	0, 1, 2,
@@ -88,6 +92,7 @@ immutable GLint[36] cubeIndices = [
 	3, 2, 6,
 	6, 7, 3,
 ];
+*/
 
 // Configures a vertex array object to contain a shape. Returns the vao index.
 // This shape is meant to be used with glDrawElements.
@@ -101,7 +106,7 @@ auto genShapeElem(alias vertices, alias indices)() {
 	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	debug writeln("vertices: ", vertices.sizeof);
+	debug writeln("vertices: ", vertices.length / 3);
 	glBufferData(GL_ARRAY_BUFFER, vertices.sizeof, &vertices, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -127,6 +132,7 @@ auto genShape(alias vertices)() {
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
 
+	debug writeln("vertices: ", vertices.length);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, vertices.sizeof, &vertices, GL_STATIC_DRAW);
 
@@ -156,4 +162,8 @@ auto genCube() {
 
 auto genQuad() {
 	return genShapeElem!(quadVertices, quadIndices)();
+}
+
+auto genPoint() {
+	return genShape!(pointVertices)();
 }
