@@ -9,30 +9,30 @@ enum Direction {
 }
 
 class Camera {
-	this(in vec3 pos = vec3(0, 0, 0), in vec3 worldUp = vec3(0, 1, 0)) {
-		this.pos = pos;
+	this(in vec3 position = vec3(0, 0, 0), in vec3 worldUp = vec3(0, 1, 0)) {
+		this.position = position;
 		this.worldUp = worldUp;
 		updateVecs();
 	}
 
 	mat4 viewMatrix() const {
-		return mat4.look_at(pos, pos + front, up);
+		return mat4.look_at(position, position + front, up);
 	}
 
 	void move(Direction dir, float dt) {
 		immutable v = moveSpeed * dt;
 		final switch (dir) {
 		case Direction.FWD:
-			pos += front * v;
+			position += front * v;
 			break;
 		case Direction.BACK:
-			pos -= front * v;
+			position -= front * v;
 			break;
 		case Direction.LEFT:
-			pos -= right * v;
+			position -= right * v;
 			break;
 		case Direction.RIGHT:
-			pos += right * v;
+			position += right * v;
 			break;
 		}
 	}
@@ -67,14 +67,14 @@ class Camera {
 		up = cross(right, front).normalized;
 	}
 
-	vec3 pos;
+	vec3 position;
 	vec3 up;
 	vec3 front;
 	vec3 right;
 	const vec3 worldUp;
 	float yaw = -PI/2;
 	float pitch = 0;
-	float sensitivity = 0.1;
-	float fov = PI/4;
-	float moveSpeed = 3f;
+	float sensitivity = 0.003;
+	float fov = 45;
+	float moveSpeed = 4f;
 }

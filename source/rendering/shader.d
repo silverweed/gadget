@@ -5,7 +5,7 @@ import std.stdio;
 import std.traits;
 import std.format : format;
 import std.string : toStringz;
-import derelict.opengl3.gl3;
+import derelict.opengl;
 import gadget.rendering.c_utils : NULL;
 import gl3n.linalg;
 
@@ -83,13 +83,13 @@ class Shader {
 			glUniform4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
 		} else static if (is(T == mat2)) {
 			glUniformMatrix2fv(glGetUniformLocation(_id, cast(const(char*))name),
-					1, GL_FALSE, val.value_ptr);
+					1, GL_TRUE, val.value_ptr);
 		} else static if (is(T == mat3)) {
 			glUniformMatrix3fv(glGetUniformLocation(_id, cast(const(char*))name),
-					1, GL_FALSE, val.value_ptr);
+					1, GL_TRUE, val.value_ptr);
 		} else static if (is(T == mat4)) {
 			glUniformMatrix4fv(glGetUniformLocation(_id, cast(const(char*))name),
-					1, GL_FALSE, val.value_ptr);
+					1, GL_TRUE, val.value_ptr);
 		} else {
 			static assert(0);
 		}
