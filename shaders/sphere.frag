@@ -1,9 +1,17 @@
 #version 330 core
 
+in vec4 center;
+
 out vec4 fragColor;
 
 uniform vec3 color;
+uniform float radius;
+uniform float scrWidth;
+uniform float scrHeight;
+uniform mat4 view;
+uniform mat4 projection;
 
 void main() {
-	fragColor = vec4(color, 1.0);
+	vec2 ndcPos = vec2(gl_FragCoord.x / scrWidth, gl_FragCoord.y / scrHeight);
+	fragColor = vec4(color, length(ndcPos - center.xy) * radius);
 }
