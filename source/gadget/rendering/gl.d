@@ -5,6 +5,8 @@ import derelict.sfml2.window;
 import derelict.opengl;
 import std.stdio;
 import gl3n.linalg;
+import gadget.rendering.presets;
+import gadget.rendering.renderstate;
 
 // FIXME
 struct RenderInitOptions {
@@ -12,17 +14,7 @@ struct RenderInitOptions {
 	string sfmlWindowLib = "/usr/lib/x86_64-linux-gnu/libcsfml-window.so.2.4";
 }
 
-struct RenderOptions {
-	vec4 clearColor = vec4(0, 0, 0, 1);
-	GLuint clearFlags = GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT;
-}
-
 sfContextSettings ctxSettings;
-struct Size {
-	uint width;
-	uint height;
-};
-Size screenSize;
 
 private bool running = true;
 
@@ -45,25 +37,27 @@ bool initRender(in RenderInitOptions opts = RenderInitOptions()) {
 
 /// Creates an SFML window, sets it as active and returns it.
 auto newWindow(uint w, uint h, const char* title = "Unnamed Gadget App", uint flags = sfClose|sfResize) {
-	screenSize.width = w;
-	screenSize.height = h;
+	RenderState.global.screenSize.x = w;
+	RenderState.global.screenSize.y = h;
 	auto window = sfWindow_create(sfVideoMode(w, h), title, flags, &ctxSettings);
 	sfWindow_setActive(window, true);
 	DerelictGL3.reload();
 
 	debug writeln("Using OpenGL version: ", ctxSettings.majorVersion, ".", ctxSettings.minorVersion);
 
+	initPresets();
+
 	return window;
 }
 
-void renderLoop(IF, RF)(sfWindow* window, IF inputProcessFunc, RF rendFunc, RenderOptions opts = RenderOptions()) {
+void renderLoop(IF, RF)(sfWindow* window, IF inputProcessFunc, RF renderFunc, RenderState state = RenderState.global) {
 	while (running) {
-		inputProcessFunc(window, opts);
+		inputProcessFunc(window, state);
 
-		glClearColor(opts.clearColor.x, opts.clearColor.y, opts.clearColor.z, opts.clearColor.a);
-		glClear(opts.clearFlags);
+		glClearColor(state.clearColor.x, state.clearColor.y, state.clearColor.z, state.clearColor.a);
+		glClear(state.clearFlags);
 
-		rendFunc();
+		renderFunc();
 		sfWindow_display(window);
 	}
 	debug writeln("Closing window.");
@@ -74,10 +68,11 @@ void quitRender() {
 	running = false;
 }
 
-void handleResize(in sfEvent event) {
-	screenSize.width = event.size.width;
-	screenSize.height = event.size.height;
-	glViewport(0, 0, screenSize.width, screenSize.height);
+auto handleResize(in sfEvent event) {
+	auto state = RenderState.global;
+	state.screenSize.x = event.size.width;
+	state.screenSize.y = event.size.height;
+	glViewport(0, 0, state.screenSize.x, state.screenSize.y);
 }
 
 void drawElements(GLuint vao, GLuint count, GLenum primitive = GL_TRIANGLES) {

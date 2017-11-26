@@ -4,6 +4,7 @@ import std.math;
 import gadget.physics;
 import gadget.rendering;
 import gadget.fpscounter;
+import gadget.rendering.renderstate;
 import derelict.sfml2.window;
 import derelict.sfml2.system;
 import derelict.opengl;
@@ -49,23 +50,25 @@ void main() {
 	glDepthMask(GL_TRUE);
 	glCullFace(GL_BACK);
 
-	auto basicShader = new Shader(getcwd() ~ "/shaders/basic.vert", getcwd() ~ "/shaders/basic.frag");
-	auto basicTransformShader = new Shader(
+	auto basicShader = Shader.fromFiles(getcwd() ~ "/shaders/basic.vert", getcwd() ~ "/shaders/basic.frag");
+	auto basicTransformShader = Shader.fromFiles(
 			getcwd() ~ "/shaders/basicTransform.vert",
 			getcwd() ~ "/shaders/basic.frag");
-	auto basicLightingShader = new Shader(
+	auto basicLightingShader = Shader.fromFiles(
 		getcwd() ~ "/shaders/basicLighting.vert",
 		getcwd() ~ "/shaders/basicLighting.frag");
-	auto sphereShader = new Shader(getcwd() ~ "/shaders/sphere.vert"
+	auto sphereShader = Shader.fromFiles(getcwd() ~ "/shaders/sphere.vert"
 			, getcwd() ~ "/shaders/sphere.frag"
 			, getcwd() ~ "/shaders/sphere.geom"
 			);
 	auto quadVAO = genQuad();
 	auto cubeVAO = genCube();
 	auto pointVAO = genPoint();
+	auto cube = makePresetCube().setPos(-1, -1, 1).setRot(0, PI/4, 0).setScale(1, 2, 1);
+	cube.uniforms["lightColor"] = vec3(1, 1, 1);
 
-	auto opts = RenderOptions();
-	opts.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
+	RenderState.global.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
+	RenderState.global.projection = mat4.perspective(6, 6, camera.fov, 0.1, 30f);
 	camera.position.z = 4;
 	auto clock = sfClock_create();
 	auto fps = new FPSCounter(2f);
@@ -76,9 +79,9 @@ void main() {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
-		const lightPos = vec3(2 * sin(t), 1f, 2 * cos(t));
+		auto lightPos = vec3(2 * sin(t), 1f, 2 * cos(t));
 		basicLightingShader.use();
-		basicLightingShader.setUni("objectColor", 1f, 0.5f, 0.31f);
+		basicLightingShader.setUni("color", 1f, 0.5f, 0.31f);
 		basicLightingShader.setUni("lightColor", 1f, 1f, 1f);
 		basicLightingShader.setUni("lightPos", lightPos);
 		basicLightingShader.setUni("viewPos", camera.position);
@@ -89,13 +92,17 @@ void main() {
 				//.rotatex(0.2).rotatez(0.2).rotatey(0.25));
 			);
 		glEnable(GL_CULL_FACE);
-		drawArrays(cubeVAO, cubeVertices.length);
+		drawArrays(cubeVAO, cubeVertices.length); /*
 		basicLightingShader.setUni("objectColor", 0f, 0.4f, 1f);
 		basicLightingShader.setUni("model", mat4.translation(3, 0, 0));
 		drawArrays(cubeVAO, cubeVertices.length);
 		basicLightingShader.setUni("model", mat4.translation(2, 2, 0));
 		glDisable(GL_CULL_FACE);
-		drawElements(quadVAO, quadIndices.length);
+		drawElements(quadVAO, quadIndices.length);*/
+
+		cube.uniforms["lightPos"] = lightPos;
+		cube.draw(window, camera);
+
 		// Draw light
 		sphereShader.use();
 		sphereShader.setUni("model", mat4.translation(lightPos));
@@ -104,20 +111,20 @@ void main() {
 		//sphereShader.setUni("projection", mat4.orthographic(-3, 3, -3, 3, 0.1, 30f));
 		sphereShader.setUni("color", 1f, 1f, 0f);
 		sphereShader.setUni("radius", 0.3f);
-		sphereShader.setUni("scrWidth", screenSize.width);
-		sphereShader.setUni("scrHeight", screenSize.height);
+		sphereShader.setUni("scrWidth", RenderState.global.screenSize.x);
+		sphereShader.setUni("scrHeight", RenderState.global.screenSize.y);
 		drawArrays(pointVAO, 1, GL_POINTS);
 
 		updateMouse(window, camera);
 
 		fps.update(deltaTime);
-	}, opts);
+	});
 }
 
-void processInput(sfWindow *window, ref RenderOptions opts) {
+void processInput(sfWindow *window, RenderState state) {
 	sfEvent evt;
 	while (sfWindow_pollEvent(window, &evt))
-		evtHandler(evt, opts);
+		evtHandler(evt, state);
 
 	if (sfKeyboard_isKeyPressed(sfKeyW))
 		camera.move(Direction.FWD, deltaTime);
@@ -129,7 +136,7 @@ void processInput(sfWindow *window, ref RenderOptions opts) {
 		camera.move(Direction.RIGHT, deltaTime);
 }
 
-void evtHandler(in sfEvent event, ref RenderOptions opts) {
+void evtHandler(in sfEvent event, RenderState state) {
 	switch (event.type) {
 	case sfEvtResized:
 		handleResize(event);

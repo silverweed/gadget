@@ -37,3 +37,19 @@ run
 up
 run
 up
+run
+up
+down
+down
+call vsId
+run
+up
+call vsCode
+call vsCode.toStringz()
+call vsCode.typeof
+call typeof(vsCode)
+call fsCode
+run
+up
+run
+call RenderState.global
