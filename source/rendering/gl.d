@@ -38,6 +38,7 @@ bool initRender(in RenderInitOptions opts = RenderInitOptions()) {
 	ctxSettings.minorVersion = 3;
 	ctxSettings.attributeFlags = sfContextCore;
 	ctxSettings.depthBits = 24;
+	ctxSettings.antialiasingLevel = 4;
 
 	return true;
 }
@@ -49,14 +50,17 @@ auto newWindow(uint w, uint h, const char* title = "Unnamed Gadget App", uint fl
 	auto window = sfWindow_create(sfVideoMode(w, h), title, flags, &ctxSettings);
 	sfWindow_setActive(window, true);
 	DerelictGL3.reload();
+
+	debug writeln("Using OpenGL version: ", ctxSettings.majorVersion, ".", ctxSettings.minorVersion);
+
 	return window;
 }
 
 void renderLoop(EH, RF)(sfWindow* window, EH evtHandler, RF rendFunc, RenderOptions opts = RenderOptions()) {
 	while (running) {
 		sfEvent evt;
-		sfWindow_pollEvent(window, &evt);
-		evtHandler(evt, opts);
+		while (sfWindow_pollEvent(window, &evt))
+			evtHandler(evt, opts);
 
 		glClearColor(opts.clearColor.x, opts.clearColor.y, opts.clearColor.z, opts.clearColor.a);
 		glClear(opts.clearFlags);

@@ -108,12 +108,7 @@ void main() {
 		sphereShader.setUni("scrHeight", screenSize.height);
 		drawArrays(pointVAO, 1, GL_POINTS);
 
-		// Hack to get mouse relative deltas for FPS camera
-		if (sfWindow_hasFocus(window)) {
-			auto mpos = sfMouse_getPosition(window);
-			camera.turn(mpos.x - WIDTH/2, HEIGHT/2 - mpos.y);
-			sfMouse_setPosition(sfVector2i(WIDTH/2, HEIGHT/2), window);
-		}
+		updateMouse(window, camera);
 
 		fps.update(deltaTime);
 	}, opts);
@@ -142,4 +137,13 @@ void processInput(in sfEvent event, ref RenderOptions opts) {
 		camera.move(Direction.BACK, deltaTime);
 	if (sfKeyboard_isKeyPressed(sfKeyD))
 		camera.move(Direction.RIGHT, deltaTime);
+}
+
+void updateMouse(sfWindow *window, Camera camera) {
+	// Hack to get mouse relative deltas for FPS camera
+	if (sfWindow_hasFocus(window)) {
+		auto mpos = sfMouse_getPosition(window);
+		camera.turn(mpos.x - WIDTH/2, HEIGHT/2 - mpos.y);
+		sfMouse_setPosition(sfVector2i(WIDTH/2, HEIGHT/2), window);
+	}
 }
