@@ -114,20 +114,10 @@ void main() {
 	}, opts);
 }
 
-void processInput(in sfEvent event, ref RenderOptions opts) {
-	switch (event.type) {
-	case sfEvtResized:
-		handleResize(event);
-		break;
-	case sfEvtMouseWheelMoved:
-		camera.zoom(event.mouseWheel.delta);
-		break;
-	default:
-		break;
-	}
-
-	if (sfKeyboard_isKeyPressed(sfKeyQ))
-		quitRender();
+void processInput(sfWindow *window, ref RenderOptions opts) {
+	sfEvent evt;
+	while (sfWindow_pollEvent(window, &evt))
+		evtHandler(evt, opts);
 
 	if (sfKeyboard_isKeyPressed(sfKeyW))
 		camera.move(Direction.FWD, deltaTime);
@@ -137,6 +127,31 @@ void processInput(in sfEvent event, ref RenderOptions opts) {
 		camera.move(Direction.BACK, deltaTime);
 	if (sfKeyboard_isKeyPressed(sfKeyD))
 		camera.move(Direction.RIGHT, deltaTime);
+}
+
+void evtHandler(in sfEvent event, ref RenderOptions opts) {
+	switch (event.type) {
+	case sfEvtResized:
+		handleResize(event);
+		break;
+	case sfEvtMouseWheelMoved:
+		camera.zoom(event.mouseWheel.delta);
+		break;
+	case sfEvtKeyPressed:
+		switch (event.key.code) {
+		case sfKeyQ:
+			quitRender();
+			break;
+		default:
+			break;
+		}
+		break;
+	case sfEvtClosed:
+		quitRender();
+		break;
+	default:
+		break;
+	}
 }
 
 void updateMouse(sfWindow *window, Camera camera) {

@@ -56,11 +56,9 @@ auto newWindow(uint w, uint h, const char* title = "Unnamed Gadget App", uint fl
 	return window;
 }
 
-void renderLoop(EH, RF)(sfWindow* window, EH evtHandler, RF rendFunc, RenderOptions opts = RenderOptions()) {
+void renderLoop(IF, RF)(sfWindow* window, IF inputProcessFunc, RF rendFunc, RenderOptions opts = RenderOptions()) {
 	while (running) {
-		sfEvent evt;
-		while (sfWindow_pollEvent(window, &evt))
-			evtHandler(evt, opts);
+		inputProcessFunc(window, opts);
 
 		glClearColor(opts.clearColor.x, opts.clearColor.y, opts.clearColor.z, opts.clearColor.a);
 		glClear(opts.clearFlags);
