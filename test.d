@@ -3,7 +3,6 @@ import std.file;
 import std.math;
 import std.random : uniform, uniform01;
 import std.algorithm;
-import std.datetime.stopwatch;
 import gadget.physics;
 import gadget.rendering;
 import gadget.fpscounter;
@@ -83,8 +82,8 @@ void main() {
 	cubes.uniforms["lightColor"] = vec3(1, 1, 1);
 	GLuint iVbo;
 	{
-		mat4[3000] cubeModels;
-		vec3[cubeModels.length] cubeColors;
+		mat4[] cubeModels = new mat4[100000];
+		vec3[] cubeColors = new vec3[cubeModels.length];
 		for (int i = 0; i < cubeModels.length; ++i) {
 			auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
 			auto rot = quat.euler_rotation(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
@@ -97,7 +96,7 @@ void main() {
 						.transposed(); // !!!
 			cubeColors[i] = vec3(uniform01(), uniform01(), uniform01());
 		}
-		cubes.nInstances = cubeModels.length;
+		cubes.nInstances = cast(uint)cubeModels.length;
 		cubes.setData("aInstanceModel", cubeModels);
 		cubes.setData("aColor", cubeColors);
 	}
@@ -107,8 +106,9 @@ void main() {
 	ground.uniforms["lightColor"] = vec3(1, 1, 1);
 
 	RenderState.global.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
-	RenderState.global.projection = mat4.perspective(6, 6, camera.fov, 0.1, 100f);
+	RenderState.global.projection = mat4.perspective(6, 6, camera.fov, 0.1, 5000f);
 	camera.position.z = 4;
+	camera.moveSpeed = 12f;
 	auto clock = sfClock_create();
 	auto fps = new FPSCounter(2f);
 	debug writeln("starting render loop");
@@ -122,8 +122,6 @@ void main() {
 
 		// Draw cubes
 		glEnable(GL_CULL_FACE);
-		StopWatch sw;
-		sw.start();
 		if (instance) {
 			cubes.uniforms["lightPos"] = lightPos;
 			cubes.draw(window, camera);
@@ -131,8 +129,6 @@ void main() {
 			c.uniforms["lightPos"] = lightPos;
 			c.draw(window, camera);
 		}
-		sw.stop();
-		writeln("time to draw cubes: ", sw.peek());
 
 		// Draw ground
 		glDisable(GL_CULL_FACE);

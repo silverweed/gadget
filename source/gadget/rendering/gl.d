@@ -51,14 +51,22 @@ auto newWindow(uint w, uint h, const char* title = "Unnamed Gadget App", uint fl
 }
 
 void renderLoop(IF, RF)(sfWindow* window, IF inputProcessFunc, RF renderFunc, RenderState state = RenderState.global) {
+	debug import std.datetime.stopwatch;
 	while (running) {
+		debug {
+			StopWatch sw;
+			sw.start();
+		}
 		inputProcessFunc(window, state);
 
 		glClearColor(state.clearColor.x, state.clearColor.y, state.clearColor.z, state.clearColor.a);
 		glClear(state.clearFlags);
 
 		renderFunc();
+		debug writeln("Time = \n\tdraw:    ", sw.peek());
+
 		sfWindow_display(window);
+		debug writeln("\tdisplay: ", sw.peek());
 	}
 	debug writeln("Closing window.");
 	sfWindow_close(window);

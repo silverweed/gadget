@@ -23,7 +23,6 @@ class Batch : Shape {
 		super(vao, count, shader, isIndexed, state);
 		if (!isIndexed)
 			drawFunc = (const(Shape) shape) {
-				debug writeln("drawing ", (cast(Batch)shape).nInstances, " instances");
 				glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
 						(cast(Batch)shape).nInstances);
 			};
