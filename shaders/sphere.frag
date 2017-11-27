@@ -8,8 +8,6 @@ uniform vec3 color;
 uniform float radius;
 uniform float scrWidth;
 uniform float scrHeight;
-uniform mat4 view;
-uniform mat4 projection;
 
 void main() {
 	vec2 ndcPos = vec2(gl_FragCoord.x / scrWidth, gl_FragCoord.y / scrHeight);

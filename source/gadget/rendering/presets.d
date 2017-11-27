@@ -69,8 +69,8 @@ void initPresets() {
 			// specular
 			float specularStrength = 0.9;
 			vec3 viewDir = normalize(viewPos - fs_in.fragPos);
-			vec3 reflectDir = reflect(-lightDir, norm);
-			float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+			vec3 halfDir = normalize(lightDir + viewDir);
+			float spec = pow(max(dot(halfDir, norm), 0.0), 32);
 			vec3 specular = specularStrength * spec * lightColor;
 
 			vec3 result = (ambient + diffuse + specular) * color;
@@ -78,8 +78,6 @@ void initPresets() {
 		}
 	});
 }
-
-alias Uniform = Algebraic!(bool, GLint, GLfloat, vec2, vec3, vec4, mat2, mat3, mat4);
 
 auto alpha(in quat q) {
 	return 2 * acos(q.w);
@@ -98,12 +96,23 @@ class Shape {
 	vec3 scale = vec3(1, 1, 1);
 	vec4 color = vec4(1, 1, 1, 1);
 	Uniform[string] uniforms;
+	GLenum primitive = GL_TRIANGLES;
 
-	this(GLuint vao, GLuint count, const Shader shader = defaultShader, const RenderState state = RenderState.global) {
+	this(GLuint vao, GLuint count, const Shader shader = defaultShader, bool isIndexed = false,
+			const RenderState state = RenderState.global)
+	{
 		this.vao = vao;
 		this.shader = shader;
 		vertexCount = count;
 		this.state = state;
+		if (isIndexed)
+			drawFunc = (GLenum primitive, GLuint count) {
+				glDrawElements(primitive, count, GL_UNSIGNED_INT, cast(void*)0);
+			};
+		else
+			drawFunc = (GLenum primitive, GLuint count) {
+				glDrawArrays(primitive, 0, count);
+			};
 	}
 
 	void draw(sfWindow *window, Camera camera) const {
@@ -111,10 +120,10 @@ class Shape {
 		shader.use();
 		// Set default uniforms
 		shader.setUni("color", color.r, color.g, color.b);
-		debug writeln("rotation: ", rotation, " axis: ", rotation.axis, ", alpha: ", rotation.alpha);
-		const model = mat4.translation(coords)
+		const model = mat4.identity
+				.scale(scale.x, scale.y, scale.z)
 				.rotate(rotation.alpha, rotation.axis)
-				.scale(scale.x, scale.y, scale.z);
+				.translate(coords);
 		shader.setUni("model", model);
 		shader.setUni("viewPos", camera.position);
 		shader.setUni("mvp", state.projection * camera.viewMatrix * model);
@@ -122,7 +131,7 @@ class Shape {
 		foreach (k, v; uniforms) {
 			shader.setUni(k, v);
 		}
-		glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+		drawFunc(primitive, vertexCount);
 		glBindVertexArray(0);
 	}
 
@@ -131,8 +140,13 @@ class Shape {
 		return this;
 	}
 
+	Shape setPos(in vec3 pos) {
+		coords = pos;
+		return this;
+	}
+
 	Shape setRot(float yaw, float pitch, float roll) {
-		rotation = quat.euler_rotation(yaw, pitch, roll);
+		rotation = quat.euler_rotation(yaw, pitch, roll).normalized();
 		return this;
 	}
 	
@@ -146,19 +160,46 @@ class Shape {
 		return this;
 	}
 
+	Shape setPrimitive(GLenum primitive) {
+		this.primitive = primitive;
+		return this;
+	}
+
 private:
 	const Shader shader;
 	GLuint vao;
+	/// This is actually the indices count if the shape is indexed
 	GLuint vertexCount;
 	const RenderState state;
+	void function(GLenum primitive, GLuint count) drawFunc;
 
 	invariant {
-		assert(rotation.magnitude_squared() == 1);
+		assert(rotation.magnitude_squared().approxEqual(1, float.epsilon));
 	}
 }
 
-auto makePresetCube() {
-	auto cube = new Shape(genCube(), cubeVertices.length);
-	cube.setColor(uniform01(), uniform01(), uniform01());
-	return cube;
+auto makePreset(ShapeType type, vec3 color = vec3(uniform01(), uniform01(), uniform01())) {
+	GLuint function() genFunc;
+	GLuint count;
+	GLenum prim = GL_TRIANGLES;
+	final switch (type) with (ShapeType) {
+	case CUBE:
+		genFunc = &genCube;
+		count = cubeVertices.length;
+		break;
+	case QUAD:
+		genFunc = &genQuad;
+		count = quadVertices.length;
+		break;
+	case POINT:
+		genFunc = &genPoint;
+		count = 1;
+		prim = GL_POINTS;
+		break;
+	}
+
+	auto shape = new Shape(genFunc(), count);
+	shape.primitive = prim;
+	shape.setColor(color.r, color.g, color.b);
+	return shape;
 }

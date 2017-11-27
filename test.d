@@ -1,6 +1,8 @@
 import std.stdio;
 import std.file;
 import std.math;
+import std.random : uniform;
+import std.algorithm;
 import gadget.physics;
 import gadget.rendering;
 import gadget.fpscounter;
@@ -50,25 +52,28 @@ void main() {
 	glDepthMask(GL_TRUE);
 	glCullFace(GL_BACK);
 
-	auto basicShader = Shader.fromFiles(getcwd() ~ "/shaders/basic.vert", getcwd() ~ "/shaders/basic.frag");
-	auto basicTransformShader = Shader.fromFiles(
-			getcwd() ~ "/shaders/basicTransform.vert",
-			getcwd() ~ "/shaders/basic.frag");
-	auto basicLightingShader = Shader.fromFiles(
-		getcwd() ~ "/shaders/basicLighting.vert",
-		getcwd() ~ "/shaders/basicLighting.frag");
 	auto sphereShader = Shader.fromFiles(getcwd() ~ "/shaders/sphere.vert"
 			, getcwd() ~ "/shaders/sphere.frag"
 			, getcwd() ~ "/shaders/sphere.geom"
 			);
-	auto quadVAO = genQuad();
-	auto cubeVAO = genCube();
-	auto pointVAO = genPoint();
-	auto cube = makePresetCube().setPos(-1, -1, 1).setRot(0, PI/4, 0).setScale(1, 2, 1);
-	cube.uniforms["lightColor"] = vec3(1, 1, 1);
+	auto point = new Shape(genPoint(), 1, sphereShader).setColor(1, 1, 0).setPrimitive(GL_POINTS);
+	Shape[] cubes;
+	for (int i = 0; i < 300; ++i) {
+		auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
+		auto rot = vec3(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
+		auto scalex = uniform(0.3, 2);
+		auto scale = vec3(scalex, scalex + uniform(-0.2, 0.2), scalex + uniform(-0.2, 0.2));
+		cubes ~= makePreset(ShapeType.CUBE).setPos(pos.x, pos.y, pos.z)
+						.setRot(rot.x, rot.y, rot.z)
+						.setScale(scale.x, scale.y, scale.z);
+	}
+	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0))
+			.setPos(0, -2, 0).setScale(100, 100, 100).setRot(PI/2, 0, 0);
+	foreach (c; cubes) c.uniforms["lightColor"] = vec3(1, 1, 1);
+	ground.uniforms["lightColor"] = vec3(1, 1, 1);
 
 	RenderState.global.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
-	RenderState.global.projection = mat4.perspective(6, 6, camera.fov, 0.1, 30f);
+	RenderState.global.projection = mat4.perspective(6, 6, camera.fov, 0.1, 100f);
 	camera.position.z = 4;
 	auto clock = sfClock_create();
 	auto fps = new FPSCounter(2f);
@@ -79,44 +84,28 @@ void main() {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
-		auto lightPos = vec3(2 * sin(t), 1f, 2 * cos(t));
-		basicLightingShader.use();
-		basicLightingShader.setUni("color", 1f, 0.5f, 0.31f);
-		basicLightingShader.setUni("lightColor", 1f, 1f, 1f);
-		basicLightingShader.setUni("lightPos", lightPos);
-		basicLightingShader.setUni("viewPos", camera.position);
-		basicLightingShader.setUni("projection", mat4.perspective(6, 6, camera.fov, 0.1, 30f));
-		basicLightingShader.setUni("view", camera.viewMatrix);
-		basicLightingShader.setUni("model", mat4.identity
-				//.scale(1.0, 1.0, 1.0)
-				//.rotatex(0.2).rotatez(0.2).rotatey(0.25));
-			);
-		glEnable(GL_CULL_FACE);
-		drawArrays(cubeVAO, cubeVertices.length); /*
-		basicLightingShader.setUni("objectColor", 0f, 0.4f, 1f);
-		basicLightingShader.setUni("model", mat4.translation(3, 0, 0));
-		drawArrays(cubeVAO, cubeVertices.length);
-		basicLightingShader.setUni("model", mat4.translation(2, 2, 0));
-		glDisable(GL_CULL_FACE);
-		drawElements(quadVAO, quadIndices.length);*/
+		auto lightPos = vec3(20 * sin(t), 1f, 20 * cos(t));
 
-		cube.uniforms["lightPos"] = lightPos;
-		cube.draw(window, camera);
+		// Draw cubes
+		glEnable(GL_CULL_FACE);
+		foreach (c; cubes) {
+			c.uniforms["lightPos"] = lightPos;
+			c.draw(window, camera);
+		}
+
+		// Draw ground
+		glDisable(GL_CULL_FACE);
+		ground.uniforms["lightPos"] = lightPos;
+		ground.draw(window, camera);
 
 		// Draw light
-		sphereShader.use();
-		sphereShader.setUni("model", mat4.translation(lightPos));
-		sphereShader.setUni("view", camera.viewMatrix);
-		sphereShader.setUni("projection", mat4.perspective(6, 6, camera.fov, 0.1, 30f));
-		//sphereShader.setUni("projection", mat4.orthographic(-3, 3, -3, 3, 0.1, 30f));
-		sphereShader.setUni("color", 1f, 1f, 0f);
-		sphereShader.setUni("radius", 0.3f);
-		sphereShader.setUni("scrWidth", RenderState.global.screenSize.x);
-		sphereShader.setUni("scrHeight", RenderState.global.screenSize.y);
-		drawArrays(pointVAO, 1, GL_POINTS);
+		point.uniforms["radius"] = 0.3;
+		point.uniforms["scrWidth"] = RenderState.global.screenSize.x;
+		point.uniforms["scrHeight"] = RenderState.global.screenSize.y;
+		point.setPos(lightPos);
+		point.draw(window, camera);
 
 		updateMouse(window, camera);
-
 		fps.update(deltaTime);
 	});
 }

@@ -9,21 +9,24 @@ struct Vertex {
 	GLfloat[2] texCoords;
 }
 
+enum ShapeType {
+	CUBE,
+	QUAD,
+	POINT
+}
+
 /// Utility module to create basic 2d or 3d shapes
 immutable Vertex[1] pointVertices = [
 	{ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0] }
 ];
 
-immutable GLfloat[12] quadVertices = [
-	0.5f,  0.5f, 0.0f,  // top right
-	0.5f, -0.5f, 0.0f,  // bottom right
-	-0.5f, -0.5f, 0.0f,  // bottom left
-	-0.5f,  0.5f, 0.0f   // top left
-];
-
-immutable GLint[6] quadIndices = [
-	0, 1, 3,
-	1, 2, 3
+immutable Vertex[12] quadVertices = [
+	{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [1f, 1f] },
+	{ [-0.5f,  0.5f, 0f], [0f, 0f, 1f], [0f, 1f] },
+	{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
+	{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
+	{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 1f] },
+	{ [ 0.5f, -0.5f, 0f], [0f, 0f, 1f], [1f, 0f] },
 ];
 
 immutable Vertex[36] cubeVertices = [
@@ -138,7 +141,7 @@ auto genCube() {
 }
 
 auto genQuad() {
-	return genShapeElem!(quadVertices, quadIndices)();
+	return genShape!(quadVertices)();
 }
 
 auto genPoint() {
