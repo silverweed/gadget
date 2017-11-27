@@ -5,4 +5,7 @@ public import gadget.rendering.gl,
               gadget.rendering.shapes,
               gadget.rendering.camera,
               gadget.rendering.renderstate,
-              gadget.rendering.presets;
+              gadget.rendering.presets,
+              gadget.rendering.interfaces,
+              gadget.rendering.utils,
+              gadget.rendering.batch;

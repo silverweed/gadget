@@ -8,85 +8,35 @@ import std.random;
 import std.math;
 import gadget.rendering.shapes;
 import gadget.rendering.utils;
+import gadget.rendering.interfaces;
 import gadget.rendering.shader;
 import gadget.rendering.renderstate;
 import gadget.rendering.camera;
+import gadget.rendering.defaultShaders;
 import derelict.sfml2;
 import derelict.opengl;
 import gl3n.linalg;
 
-private Shader defaultShader;
+Shader defaultShader,
+       defaultShaderInstanced;
 
 void initPresets() {
-	defaultShader = new Shader(q{
-		#version 330 core
-
-		layout (location = 0) in vec3 aPos;
-		layout (location = 1) in vec3 aNormal;
-		layout (location = 2) in vec2 aTexCoord;
-
-		uniform mat4 model;
-		uniform mat4 mvp;
-
-		out VS_OUT {
-			vec3 fragPos;
-			vec3 normal;
-			vec2 texCoord;
-		} vs_out;
-
-		void main() {
-			vs_out.normal = mat3(transpose(inverse(model))) * aNormal;
-			vs_out.texCoord = aTexCoord;
-			vs_out.fragPos = vec3(model * vec4(aPos, 1.0));
-			gl_Position = mvp * vec4(aPos, 1.0);
-		}
-	}, q{
-		#version 330 core
-
-		out vec4 fragColor;
-
-		in VS_OUT {
-			vec3 fragPos;
-			vec3 normal;
-			vec2 texCoord;
-		} fs_in;
-
-		uniform vec3 color;
-		uniform vec3 viewPos;
-		uniform vec3 lightPos;
-		uniform vec3 lightColor;
-		uniform float specularStrength;
-
-		void main() {
-			// ambient
-			float ambientStrength = 0.2;
-			vec3 ambient = ambientStrength * lightColor;
-
-			// diffuse
-			vec3 norm = normalize(fs_in.normal);
-			vec3 lightDir = normalize(lightPos - fs_in.fragPos);
-			float diff = max(dot(norm, lightDir), 0.0);
-			vec3 diffuse = diff * lightColor;
-
-			// specular
-			vec3 viewDir = normalize(viewPos - fs_in.fragPos);
-			vec3 halfDir = normalize(lightDir + viewDir);
-			float spec = pow(max(dot(halfDir, norm), 0.0), 16);
-			vec3 specular = specularStrength * spec * lightColor;
-
-			vec3 result = (ambient + diffuse + specular) * color;
-			fragColor = vec4(result, 1.0);
-		}
-	});
+	defaultShader = new Shader(vs_posNormTex, fs_blinnPhong);
+	defaultShaderInstanced = new Shader(vs_posNormTexInstanced, fs_blinnPhongInstanced);
 }
 
-class Shape {
-	vec3 coords; /// world coordinates
+class Shape : Drawable {
+	vec3 coords = vec3(0, 0, 0); /// world coordinates
 	quat rotation = quat.identity;
 	vec3 scale = vec3(1, 1, 1);
 	vec4 color = vec4(1, 1, 1, 1);
 	Uniform[string] uniforms;
 	GLenum primitive = GL_TRIANGLES;
+	const Shader shader;
+	GLuint vao;
+	/// This is actually the indices count if the shape is indexed
+	GLuint vertexCount;
+	const RenderState state;
 
 	this(GLuint vao, GLuint count, const Shader shader = defaultShader, bool isIndexed = false,
 			const RenderState state = RenderState.global)
@@ -96,16 +46,16 @@ class Shape {
 		vertexCount = count;
 		this.state = state;
 		if (isIndexed)
-			drawFunc = (GLenum primitive, GLuint count) {
-				glDrawElements(primitive, count, GL_UNSIGNED_INT, cast(void*)0);
+			drawFunc = (const(Shape) shape) {
+				glDrawElements(shape.primitive, shape.vertexCount, GL_UNSIGNED_INT, cast(void*)0);
 			};
 		else
-			drawFunc = (GLenum primitive, GLuint count) {
-				glDrawArrays(primitive, 0, count);
+			drawFunc = (const(Shape) shape) {
+				glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount, 300);
 			};
 	}
 
-	void draw(sfWindow *window, Camera camera) const {
+	override void draw(sfWindow *window, Camera camera) const {
 		glBindVertexArray(vao);
 		shader.use();
 		setDefaultUniforms(camera);
@@ -113,7 +63,7 @@ class Shape {
 		foreach (k, v; uniforms) {
 			shader.setUni(k, v);
 		}
-		drawFunc(primitive, vertexCount);
+		drawFunc(this);
 		glBindVertexArray(0);
 	}
 
@@ -147,7 +97,7 @@ class Shape {
 		return this;
 	}
 
-private:
+protected:
 	void setDefaultUniforms(Camera camera) const {
 		shader.setUni("color", color.r, color.g, color.b);
 		shader.setUni("specularStrength", 0.9);
@@ -159,13 +109,7 @@ private:
 		shader.setUni("viewPos", camera.position);
 		shader.setUni("mvp", state.projection * camera.viewMatrix * model);
 	}
-
-	const Shader shader;
-	GLuint vao;
-	/// This is actually the indices count if the shape is indexed
-	GLuint vertexCount;
-	const RenderState state;
-	void function(GLenum primitive, GLuint count) drawFunc;
+	void function(const(Shape) shape) drawFunc;
 
 	invariant {
 		assert(rotation.magnitude_squared().approxEqual(1, float.epsilon));

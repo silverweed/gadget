@@ -1,8 +1,9 @@
 import std.stdio;
 import std.file;
 import std.math;
-import std.random : uniform;
+import std.random : uniform, uniform01;
 import std.algorithm;
+import std.datetime.stopwatch;
 import gadget.physics;
 import gadget.rendering;
 import gadget.fpscounter;
@@ -57,29 +58,52 @@ void main() {
 			, getcwd() ~ "/shaders/sphere.geom"
 			);
 	auto point = new Shape(genPoint(), 1, sphereShader).setColor(1, 1, 0).setPrimitive(GL_POINTS);
-	Shape[] cubes;
-	for (int i = 0; i < 300; ++i) {
+
+	Shape[] cubes2;
+	for (int i = 0; i < 3000; ++i) {
 		auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
 		auto rot = vec3(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
 		auto scalex = uniform(0.3, 2);
 		auto scale = vec3(scalex, scalex + uniform(-1, 1), scalex + uniform(-1, 1));
-		cubes ~= makePreset(ShapeType.CUBE).setPos(pos.x, pos.y, pos.z)
+		cubes2 ~= makePreset(ShapeType.CUBE).setPos(pos.x, pos.y, pos.z)
 						.setRot(rot.x, rot.y, rot.z)
 						.setScale(scale.x, scale.y, scale.z);
-		cubes[$ - 1].uniforms["specularStrength"] = uniform(0, 10);
+		cubes2[$ - 1].uniforms["specularStrength"] = uniform(0, 10);
 	}
-	cubes ~= makePreset(ShapeType.CUBE).setPos(-1, 0, 0).setColor(1, 0, 1);
-	cubes[$ - 1].uniforms["specularStrength"] = 0f;
-	cubes ~= makePreset(ShapeType.CUBE).setPos(0.1, 0, 0).setColor(1, 0, 1);
-	cubes[$ - 1].uniforms["specularStrength"] = 1f;
-	cubes ~= makePreset(ShapeType.CUBE).setPos(1.2, 0, 0).setColor(1, 0, 1);
-	cubes[$ - 1].uniforms["specularStrength"] = 4f;
-	cubes ~= makePreset(ShapeType.CUBE).setPos(2.3, 0, 0).setColor(1, 0, 1);
-	cubes[$ - 1].uniforms["specularStrength"] = 100f;
+	cubes2 ~= makePreset(ShapeType.CUBE).setPos(-1, 0, 0).setColor(1, 0, 1);
+	cubes2[$ - 1].uniforms["specularStrength"] = 0f;
+	cubes2 ~= makePreset(ShapeType.CUBE).setPos(0.1, 0, 0).setColor(1, 0, 1);
+	cubes2[$ - 1].uniforms["specularStrength"] = 1f;
+	cubes2 ~= makePreset(ShapeType.CUBE).setPos(1.2, 0, 0).setColor(1, 0, 1);
+	cubes2[$ - 1].uniforms["specularStrength"] = 4f;
+	cubes2 ~= makePreset(ShapeType.CUBE).setPos(2.3, 0, 0).setColor(1, 0, 1);
+	cubes2[$ - 1].uniforms["specularStrength"] = 100f;
+
+	auto cubes = new Batch(genCube(), cubeVertices.length);
+	cubes.uniforms["lightColor"] = vec3(1, 1, 1);
+	GLuint iVbo;
+	{
+		mat4[3000] cubeModels;
+		vec3[cubeModels.length] cubeColors;
+		for (int i = 0; i < cubeModels.length; ++i) {
+			auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
+			auto rot = quat.euler_rotation(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
+			auto scalex = uniform(0.3, 2);
+			auto scale = vec3(scalex, scalex + uniform(-1, 1), scalex + uniform(-1, 1));
+			cubeModels[i] = mat4.identity
+						.translate(pos.x, pos.y, pos.z)
+						.rotate(rot.alpha, rot.axis)
+						.scale(scale.x, scale.y, scale.z)
+						.transposed(); // !!!
+			cubeColors[i] = vec3(uniform01(), uniform01(), uniform01());
+		}
+		cubes.nInstances = cubeModels.length;
+		cubes.setData("aInstanceModel", cubeModels);
+		cubes.setData("aColor", cubeColors);
+	}
 
 	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0))
 			.setPos(0, -2, 0).setScale(100, 100, 100).setRot(PI/2, 0, 0);
-	foreach (c; cubes) c.uniforms["lightColor"] = vec3(1, 1, 1);
 	ground.uniforms["lightColor"] = vec3(1, 1, 1);
 
 	RenderState.global.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
@@ -94,15 +118,21 @@ void main() {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
-		//auto lightPos = vec3(20 * sin(t), 10f + 10f * sin(t / 5), 20 * cos(t));
-		auto lightPos = vec3(4 * sin(t), 1, 0.0);
+		auto lightPos = vec3(20 * sin(t), 10f + 10f * sin(t / 5), 20 * cos(t));
 
 		// Draw cubes
 		glEnable(GL_CULL_FACE);
-		foreach (c; cubes) {
+		StopWatch sw;
+		sw.start();
+		if (instance) {
+			cubes.uniforms["lightPos"] = lightPos;
+			cubes.draw(window, camera);
+		} else foreach (c; cubes2) {
 			c.uniforms["lightPos"] = lightPos;
 			c.draw(window, camera);
 		}
+		sw.stop();
+		writeln("time to draw cubes: ", sw.peek());
 
 		// Draw ground
 		glDisable(GL_CULL_FACE);
@@ -120,6 +150,8 @@ void main() {
 		fps.update(deltaTime);
 	});
 }
+
+bool instance = true;
 
 void processInput(sfWindow *window, RenderState state) {
 	sfEvent evt;
@@ -148,6 +180,9 @@ void evtHandler(in sfEvent event, RenderState state) {
 		switch (event.key.code) {
 		case sfKeyQ:
 			quitRender();
+			break;
+		case sfKeyI:
+			instance = !instance;
 			break;
 		default:
 			break;
