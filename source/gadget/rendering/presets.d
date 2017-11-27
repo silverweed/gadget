@@ -7,6 +7,7 @@ import std.variant;
 import std.random;
 import std.math;
 import gadget.rendering.shapes;
+import gadget.rendering.utils;
 import gadget.rendering.shader;
 import gadget.rendering.renderstate;
 import gadget.rendering.camera;
@@ -54,10 +55,11 @@ void initPresets() {
 		uniform vec3 viewPos;
 		uniform vec3 lightPos;
 		uniform vec3 lightColor;
+		uniform float specularStrength;
 
 		void main() {
 			// ambient
-			float ambientStrength = 0.1;
+			float ambientStrength = 0.2;
 			vec3 ambient = ambientStrength * lightColor;
 
 			// diffuse
@@ -67,27 +69,15 @@ void initPresets() {
 			vec3 diffuse = diff * lightColor;
 
 			// specular
-			float specularStrength = 0.9;
 			vec3 viewDir = normalize(viewPos - fs_in.fragPos);
 			vec3 halfDir = normalize(lightDir + viewDir);
-			float spec = pow(max(dot(halfDir, norm), 0.0), 32);
+			float spec = pow(max(dot(halfDir, norm), 0.0), 16);
 			vec3 specular = specularStrength * spec * lightColor;
 
 			vec3 result = (ambient + diffuse + specular) * color;
 			fragColor = vec4(result, 1.0);
 		}
 	});
-}
-
-auto alpha(in quat q) {
-	return 2 * acos(q.w);
-}
-
-auto axis(in quat q) {
-	const d = sqrt(1 - q.w * q.w);
-	if (d == 0)
-		return vec3(1, 0, 0); // axis not important when rotation is 0
-	return vec3(q.x / d, q.y / d, q.z / d);
 }
 
 class Shape {
@@ -118,15 +108,7 @@ class Shape {
 	void draw(sfWindow *window, Camera camera) const {
 		glBindVertexArray(vao);
 		shader.use();
-		// Set default uniforms
-		shader.setUni("color", color.r, color.g, color.b);
-		const model = mat4.identity
-				.scale(scale.x, scale.y, scale.z)
-				.rotate(rotation.alpha, rotation.axis)
-				.translate(coords);
-		shader.setUni("model", model);
-		shader.setUni("viewPos", camera.position);
-		shader.setUni("mvp", state.projection * camera.viewMatrix * model);
+		setDefaultUniforms(camera);
 		// Set custom uniforms (may overwrite default ones)
 		foreach (k, v; uniforms) {
 			shader.setUni(k, v);
@@ -166,6 +148,18 @@ class Shape {
 	}
 
 private:
+	void setDefaultUniforms(Camera camera) const {
+		shader.setUni("color", color.r, color.g, color.b);
+		shader.setUni("specularStrength", 0.9);
+		const model = mat4.identity
+				.scale(scale.x, scale.y, scale.z)
+				.rotate(rotation.alpha, rotation.axis)
+				.translate(coords);
+		shader.setUni("model", model);
+		shader.setUni("viewPos", camera.position);
+		shader.setUni("mvp", state.projection * camera.viewMatrix * model);
+	}
+
 	const Shader shader;
 	GLuint vao;
 	/// This is actually the indices count if the shape is indexed

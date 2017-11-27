@@ -7,7 +7,7 @@ import std.variant;
 import std.format : format;
 import std.string : toStringz;
 import derelict.opengl;
-import gadget.rendering.c_utils : NULL;
+import gadget.rendering.utils : NULL;
 import gl3n.linalg;
 
 alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, vec4, mat2, mat3, mat4);

@@ -76,5 +76,5 @@ class Camera {
 	float pitch = 0;
 	float sensitivity = 0.003;
 	float fov = 45;
-	float moveSpeed = 4f;
+	float moveSpeed = 6f;
 }

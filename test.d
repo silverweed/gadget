@@ -62,11 +62,21 @@ void main() {
 		auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
 		auto rot = vec3(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
 		auto scalex = uniform(0.3, 2);
-		auto scale = vec3(scalex, scalex + uniform(-0.2, 0.2), scalex + uniform(-0.2, 0.2));
+		auto scale = vec3(scalex, scalex + uniform(-1, 1), scalex + uniform(-1, 1));
 		cubes ~= makePreset(ShapeType.CUBE).setPos(pos.x, pos.y, pos.z)
 						.setRot(rot.x, rot.y, rot.z)
 						.setScale(scale.x, scale.y, scale.z);
+		cubes[$ - 1].uniforms["specularStrength"] = uniform(0, 10);
 	}
+	cubes ~= makePreset(ShapeType.CUBE).setPos(-1, 0, 0).setColor(1, 0, 1);
+	cubes[$ - 1].uniforms["specularStrength"] = 0f;
+	cubes ~= makePreset(ShapeType.CUBE).setPos(0.1, 0, 0).setColor(1, 0, 1);
+	cubes[$ - 1].uniforms["specularStrength"] = 1f;
+	cubes ~= makePreset(ShapeType.CUBE).setPos(1.2, 0, 0).setColor(1, 0, 1);
+	cubes[$ - 1].uniforms["specularStrength"] = 4f;
+	cubes ~= makePreset(ShapeType.CUBE).setPos(2.3, 0, 0).setColor(1, 0, 1);
+	cubes[$ - 1].uniforms["specularStrength"] = 100f;
+
 	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0))
 			.setPos(0, -2, 0).setScale(100, 100, 100).setRot(PI/2, 0, 0);
 	foreach (c; cubes) c.uniforms["lightColor"] = vec3(1, 1, 1);
@@ -84,7 +94,8 @@ void main() {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
-		auto lightPos = vec3(20 * sin(t), 1f, 20 * cos(t));
+		//auto lightPos = vec3(20 * sin(t), 10f + 10f * sin(t / 5), 20 * cos(t));
+		auto lightPos = vec3(4 * sin(t), 1, 0.0);
 
 		// Draw cubes
 		glEnable(GL_CULL_FACE);
