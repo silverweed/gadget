@@ -16,30 +16,10 @@ import derelict.opengl;
 enum WIDTH = 800;
 enum HEIGHT = 600;
 
-__gshared auto camera = new Camera();
 float deltaTime = 0;
 float lastFrame = 0;
-int lastMouseX = WIDTH/2;
-int lastMouseY = HEIGHT/2;
 
 void main() {
-	/+
-	vec2 v = vec2(2, 3);
-	writeln(v.x, ", ", v.y);
-
-	AABB a = AABB(vec2(1, 2), vec2(3, 4)),
-	     b = AABB(vec2(1, 1), vec2(3, 2));
-	writeln(AABBOverlapsAABB(a, b));
-
-	Circle c = Circle(vec2(2, 2), 3),
-	       d = Circle(vec2(3, 3), 4);
-	writeln(circleOverlapsCircle(c, d));
-
-	PhysicsObj obj = PhysicsObj(a, v, v, 0.4f);
-	PhysicsWorld world = new PhysicsWorld();
-	world.add(obj);
-	+/
-
 	//// Init rendering system
 	initRender();
 	auto window = newWindow(WIDTH, HEIGHT);
@@ -52,67 +32,29 @@ void main() {
 	glDepthMask(GL_TRUE);
 	glCullFace(GL_BACK);
 
-	auto sphereShader = Shader.fromFiles(getcwd() ~ "/shaders/sphere.vert"
-			, getcwd() ~ "/shaders/sphere.frag"
-			, getcwd() ~ "/shaders/sphere.geom"
-			);
-	auto point = new Shape(genPoint(), 1, sphereShader).setColor(1, 1, 0).setPrimitive(GL_POINTS);
+	auto camera = new Camera();
 
-	Shape[] cubes2;
-	for (int i = 0; i < 3000; ++i) {
-		auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
-		auto rot = vec3(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
-		auto scalex = uniform(0.3, 2);
-		auto scale = vec3(scalex, scalex + uniform(-1, 1), scalex + uniform(-1, 1));
-		cubes2 ~= makePreset(ShapeType.CUBE).setPos(pos.x, pos.y, pos.z)
-						.setRot(rot.x, rot.y, rot.z)
-						.setScale(scale.x, scale.y, scale.z);
-		cubes2[$ - 1].uniforms["specularStrength"] = uniform(0, 10);
-	}
-	cubes2 ~= makePreset(ShapeType.CUBE).setPos(-1, 0, 0).setColor(1, 0, 1);
-	cubes2[$ - 1].uniforms["specularStrength"] = 0f;
-	cubes2 ~= makePreset(ShapeType.CUBE).setPos(0.1, 0, 0).setColor(1, 0, 1);
-	cubes2[$ - 1].uniforms["specularStrength"] = 1f;
-	cubes2 ~= makePreset(ShapeType.CUBE).setPos(1.2, 0, 0).setColor(1, 0, 1);
-	cubes2[$ - 1].uniforms["specularStrength"] = 4f;
-	cubes2 ~= makePreset(ShapeType.CUBE).setPos(2.3, 0, 0).setColor(1, 0, 1);
-	cubes2[$ - 1].uniforms["specularStrength"] = 100f;
-
-	auto cubes = new Batch(genCube(), cubeVertices.length);
-	cubes.uniforms["lightColor"] = vec3(1, 1, 1);
-	GLuint iVbo;
-	{
-		mat4[] cubeModels = new mat4[100000];
-		vec3[] cubeColors = new vec3[cubeModels.length];
-		for (int i = 0; i < cubeModels.length; ++i) {
-			auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
-			auto rot = quat.euler_rotation(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
-			auto scalex = uniform(0.3, 2);
-			auto scale = vec3(scalex, scalex + uniform(-1, 1), scalex + uniform(-1, 1));
-			cubeModels[i] = mat4.identity
-						.translate(pos.x, pos.y, pos.z)
-						.rotate(rot.alpha, rot.axis)
-						.scale(scale.x, scale.y, scale.z)
-						.transposed(); // !!!
-			cubeColors[i] = vec3(uniform01(), uniform01(), uniform01());
-		}
-		cubes.nInstances = cast(uint)cubeModels.length;
-		cubes.setData("aInstanceModel", cubeModels);
-		cubes.setData("aColor", cubeColors);
-	}
-
+	auto point = new Mesh(genPoint(), 1, presetShaders["billboardQuad"]).setColor(1, 1, 0).setPrimitive(GL_POINTS);
+	auto cubes = createCubes(1000);
 	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0))
 			.setPos(0, -2, 0).setScale(100, 100, 100).setRot(PI/2, 0, 0);
-	ground.uniforms["lightColor"] = vec3(1, 1, 1);
+	ground.uniforms["pointLight.diffuse"] = vec3(1, 1, 1);
+	ground.uniforms["pointLight.attenuation"] = 0.01;
+	ground.uniforms["ambientLight.color"] = vec3(1, 1, 1);
+	ground.uniforms["ambientLight.strength"] = 0.1;
+	ground.uniforms["dirLight.diffuse"] = vec3(0.3, 0.3, 0.3);
+	ground.uniforms["dirLight.direction"] = vec3(0.4, 0.4, 0.4);
 
-	RenderState.global.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
+	//RenderState.global.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
+	RenderState.global.clearColor = vec4(0.06, 0.0, 0.1, 1.0);
 	RenderState.global.projection = mat4.perspective(6, 6, camera.fov, 0.1, 5000f);
+
 	camera.position.z = 4;
 	camera.moveSpeed = 12f;
 	auto clock = sfClock_create();
 	auto fps = new FPSCounter(2f);
 	debug writeln("starting render loop");
-	renderLoop(window, &processInput, () {
+	renderLoop(window, camera, &processInput, (sfWindow *window, Camera camera, RenderState state) {
 		// Update time
 		auto t = sfTime_asSeconds(sfClock_getElapsedTime(clock));
 		deltaTime = t - lastFrame;
@@ -122,17 +64,12 @@ void main() {
 
 		// Draw cubes
 		glEnable(GL_CULL_FACE);
-		if (instance) {
-			cubes.uniforms["lightPos"] = lightPos;
-			cubes.draw(window, camera);
-		} else foreach (c; cubes2) {
-			c.uniforms["lightPos"] = lightPos;
-			c.draw(window, camera);
-		}
+		cubes.uniforms["pointLight.position"] = lightPos;
+		cubes.draw(window, camera);
 
 		// Draw ground
 		glDisable(GL_CULL_FACE);
-		ground.uniforms["lightPos"] = lightPos;
+		ground.uniforms["pointLight.position"] = lightPos;
 		ground.draw(window, camera);
 
 		// Draw light
@@ -147,12 +84,10 @@ void main() {
 	});
 }
 
-bool instance = true;
-
-void processInput(sfWindow *window, RenderState state) {
+void processInput(sfWindow *window, Camera camera, RenderState state) {
 	sfEvent evt;
 	while (sfWindow_pollEvent(window, &evt))
-		evtHandler(evt, state);
+		evtHandler(evt, camera, state);
 
 	if (sfKeyboard_isKeyPressed(sfKeyW))
 		camera.move(Direction.FWD, deltaTime);
@@ -164,7 +99,7 @@ void processInput(sfWindow *window, RenderState state) {
 		camera.move(Direction.RIGHT, deltaTime);
 }
 
-void evtHandler(in sfEvent event, RenderState state) {
+void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 	switch (event.type) {
 	case sfEvtResized:
 		handleResize(event);
@@ -176,9 +111,6 @@ void evtHandler(in sfEvent event, RenderState state) {
 		switch (event.key.code) {
 		case sfKeyQ:
 			quitRender();
-			break;
-		case sfKeyI:
-			instance = !instance;
 			break;
 		default:
 			break;
@@ -199,4 +131,35 @@ void updateMouse(sfWindow *window, Camera camera) {
 		camera.turn(mpos.x - WIDTH/2, HEIGHT/2 - mpos.y);
 		sfMouse_setPosition(sfVector2i(WIDTH/2, HEIGHT/2), window);
 	}
+}
+
+auto createCubes(uint n) {
+	auto cubes = new Batch(genCube(), cubeVertices.length, presetShaders["defaultInstanced"]);
+	cubes.uniforms["pointLight.diffuse"] = vec3(1, 1, 1);
+	cubes.uniforms["pointLight.attenuation"] = 0.01;
+	cubes.uniforms["ambientLight.color"] = vec3(1, 1, 1);
+	cubes.uniforms["ambientLight.strength"] = 0.01;
+	cubes.uniforms["dirLight.diffuse"] = vec3(0.1, 0.1, 0.1);
+	cubes.uniforms["dirLight.direction"] = vec3(1, 0, 0);
+	GLuint iVbo;
+	{
+		mat4[] cubeModels = new mat4[n];
+		vec3[] cubeColors = new vec3[cubeModels.length];
+		for (int i = 0; i < cubeModels.length; ++i) {
+			auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
+			auto rot = quat.euler_rotation(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
+			auto scalex = uniform(0.3, 2);
+			auto scale = vec3(scalex, scalex + uniform(-0.5, 1), scalex + uniform(-0.5, 1));
+			cubeModels[i] = mat4.identity
+						.translate(pos.x, pos.y, pos.z)
+						.rotate(rot.alpha, rot.axis)
+						.scale(scale.x, scale.y, scale.z)
+						.transposed(); // !!!
+			cubeColors[i] = vec3(uniform01(), uniform01(), uniform01());
+		}
+		cubes.nInstances = cast(uint)cubeModels.length;
+		cubes.setData("aInstanceModel", cubeModels);
+		cubes.setData("aColor", cubeColors);
+	}
+	return cubes;
 }

@@ -6,6 +6,7 @@ import derelict.opengl;
 import std.stdio;
 import gl3n.linalg;
 import gadget.rendering.presets;
+import gadget.rendering.camera;
 import gadget.rendering.renderstate;
 
 // FIXME
@@ -45,28 +46,28 @@ auto newWindow(uint w, uint h, const char* title = "Unnamed Gadget App", uint fl
 
 	debug writeln("Using OpenGL version: ", ctxSettings.majorVersion, ".", ctxSettings.minorVersion);
 
-	initPresets();
-
 	return window;
 }
 
-void renderLoop(IF, RF)(sfWindow* window, IF inputProcessFunc, RF renderFunc, RenderState state = RenderState.global) {
-	debug import std.datetime.stopwatch;
+void renderLoop(IF, RF)(sfWindow* window, Camera camera,
+		IF inputProcessFunc, RF renderFunc, RenderState state = RenderState.global)
+{
+	debug (2) import std.datetime.stopwatch;
 	while (running) {
-		debug {
+		debug (2) {
 			StopWatch sw;
 			sw.start();
 		}
-		inputProcessFunc(window, state);
+		inputProcessFunc(window, camera, state);
 
 		glClearColor(state.clearColor.x, state.clearColor.y, state.clearColor.z, state.clearColor.a);
 		glClear(state.clearFlags);
 
-		renderFunc();
-		debug writeln("Time = \n\tdraw:    ", sw.peek());
+		renderFunc(window, camera, state);
+		debug (2) writeln("Time = \n\tdraw:    ", sw.peek());
 
 		sfWindow_display(window);
-		debug writeln("\tdisplay: ", sw.peek());
+		debug (2) writeln("\tdisplay: ", sw.peek());
 	}
 	debug writeln("Closing window.");
 	sfWindow_close(window);

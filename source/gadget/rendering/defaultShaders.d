@@ -1,7 +1,121 @@
 module gadget.rendering.defaultShaders;
 
-enum vs_posNormTex = q{
+import gadget.rendering.material;
+
+enum MATERIAL_HEADER = `
 	#version 330 core
+
+` ~ GenMaterial!() ~ `
+` ~ GenPointLight!() ~ `
+` ~ GenDirLight!() ~ `
+` ~ GenAmbientLight!();
+
+enum f_addAmbientLight = q{
+	vec3 addAmbientLight(in AmbientLight light) {
+		return light.strength * light.color * material.diffuse;
+	}
+};
+
+enum f_addPointLight = q{
+	vec3 addPointLight(in PointLight light) {
+		// diffuse
+		vec3 norm = normalize(fs_in.normal);
+		vec3 fragToLight = light.position - fs_in.fragPos;
+		vec3 lightDir = normalize(fragToLight);
+		float diff = max(dot(norm, lightDir), 0.0);
+		vec3 diffuse = diff * light.diffuse;
+
+		// specular
+		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
+		vec3 halfDir = normalize(lightDir + viewDir);
+		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
+		vec3 specular = material.shininess * spec * light.diffuse;
+
+		vec3 result = diffuse * material.diffuse + specular * material.specular;
+		
+		// attenuation
+		float dist = length(fragToLight);
+		float atten = 1.0 / (1.0 + light.attenuation * dist * dist);
+
+		return result * atten;
+	}
+};
+
+enum f_addDirLight = q{
+	vec3 addDirLight(in DirLight light) {
+		// diffuse
+		vec3 norm = normalize(fs_in.normal);
+		vec3 lightDir = normalize(-light.direction);
+		float diff = max(dot(norm, lightDir), 0.0);
+		vec3 diffuse = diff * light.diffuse;
+
+		// specular
+		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
+		vec3 halfDir = normalize(lightDir + viewDir);
+		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
+		vec3 specular = material.shininess * spec * light.diffuse;
+
+		vec3 result = diffuse * material.diffuse + specular * material.specular;
+		
+		return result;
+	}
+};
+
+/// Instanced version
+enum fi_addAmbientLight = q{
+	vec3 addAmbientLight(in AmbientLight light) {
+		return light.strength * light.color * fs_in.color;
+	}
+};
+
+enum fi_addPointLight = q{
+	vec3 addPointLight(in PointLight light) {
+		// diffuse
+		vec3 norm = normalize(fs_in.normal);
+		vec3 fragToLight = light.position - fs_in.fragPos;
+		vec3 lightDir = normalize(fragToLight);
+		float diff = max(dot(norm, lightDir), 0.0);
+		vec3 diffuse = diff * light.diffuse;
+
+		// specular
+		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
+		vec3 halfDir = normalize(lightDir + viewDir);
+		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
+		vec3 specular = specularStrength * spec * light.diffuse;
+
+		vec3 result = (diffuse + specular) * fs_in.color;
+		
+		// attenuation
+		float dist = length(fragToLight);
+		float atten = 1.0 / (1.0 + light.attenuation * dist * dist);
+
+		return result * atten;
+	}
+};
+
+enum fi_addDirLight = q{
+	vec3 addDirLight(in DirLight light) {
+		// diffuse
+		vec3 norm = normalize(fs_in.normal);
+		vec3 lightDir = normalize(-light.direction);
+		float diff = max(dot(norm, lightDir), 0.0);
+		vec3 diffuse = diff * light.diffuse;
+
+		// specular
+		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
+		vec3 halfDir = normalize(lightDir + viewDir);
+		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
+		vec3 specular = specularStrength * spec * light.diffuse;
+
+		vec3 result = (diffuse + specular) * fs_in.color;
+		
+		return result;
+	}
+};
+
+//////////////////////////////////////////////
+
+enum vs_posNormTex = MATERIAL_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 	layout (location = 1) in vec3 aNormal;
@@ -24,8 +138,7 @@ enum vs_posNormTex = q{
 	}
 };
 
-enum vs_posNormTexInstanced = q{
-	#version 330 core
+enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 	layout (location = 1) in vec3 aNormal;
@@ -54,8 +167,7 @@ enum vs_posNormTexInstanced = q{
 	}
 };
 
-enum fs_blinnPhong = q{
-	#version 330 core
+enum fs_blinnPhong = MATERIAL_HEADER ~ q{
 
 	out vec4 fragColor;
 
@@ -65,36 +177,24 @@ enum fs_blinnPhong = q{
 		vec2 texCoord;
 	} fs_in;
 
-	uniform vec3 color;
 	uniform vec3 viewPos;
-	uniform vec3 lightPos;
-	uniform vec3 lightColor;
-	uniform float specularStrength;
+	uniform PointLight pointLight;
+	uniform DirLight dirLight;
+	uniform AmbientLight ambientLight;
+	uniform Material material;
+
+} ~ f_addAmbientLight ~ f_addPointLight ~ f_addDirLight ~ q{
 
 	void main() {
-		// ambient
-		float ambientStrength = 0.2;
-		vec3 ambient = ambientStrength * lightColor;
+		vec3 result = addAmbientLight(ambientLight);
+		result += addPointLight(pointLight);
+		result += addDirLight(dirLight);
 
-		// diffuse
-		vec3 norm = normalize(fs_in.normal);
-		vec3 lightDir = normalize(lightPos - fs_in.fragPos);
-		float diff = max(dot(norm, lightDir), 0.0);
-		vec3 diffuse = diff * lightColor;
-
-		// specular
-		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
-		vec3 halfDir = normalize(lightDir + viewDir);
-		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
-		vec3 specular = specularStrength * spec * lightColor;
-
-		vec3 result = (ambient + diffuse + specular) * color;
 		fragColor = vec4(result, 1.0);
 	}
 };
 
-enum fs_blinnPhongInstanced = q{
-	#version 330 core
+enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 
 	out vec4 fragColor;
 
@@ -106,28 +206,69 @@ enum fs_blinnPhongInstanced = q{
 	} fs_in;
 
 	uniform vec3 viewPos;
-	uniform vec3 lightPos;
-	uniform vec3 lightColor;
 	uniform float specularStrength;
+	uniform PointLight pointLight;
+	uniform DirLight dirLight;
+	uniform AmbientLight ambientLight;
+
+} ~ fi_addAmbientLight ~ fi_addPointLight ~ fi_addDirLight ~ q{
 
 	void main() {
-		// ambient
-		float ambientStrength = 0.2;
-		vec3 ambient = ambientStrength * lightColor;
+		vec3 result = addAmbientLight(ambientLight);
+		result += addPointLight(pointLight);
+		result += addDirLight(dirLight);
 
-		// diffuse
-		vec3 norm = normalize(fs_in.normal);
-		vec3 lightDir = normalize(lightPos - fs_in.fragPos);
-		float diff = max(dot(norm, lightDir), 0.0);
-		vec3 diffuse = diff * lightColor;
-
-		// specular
-		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
-		vec3 halfDir = normalize(lightDir + viewDir);
-		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
-		vec3 specular = specularStrength * spec * lightColor;
-
-		vec3 result = (ambient + diffuse + specular) * fs_in.color;
 		fragColor = vec4(result, 1.0);
+	}
+};
+
+enum vs_billboardQuad = MATERIAL_HEADER ~ q{
+
+	layout (location = 0) in vec3 aPos;
+
+	uniform mat4 mvp;
+
+	out vec4 center;
+
+	void main() {
+		gl_Position = mvp * vec4(aPos, 1.0);
+		center = gl_Position;
+	}
+};
+
+enum gs_billboardQuad = MATERIAL_HEADER ~ q{
+
+	layout (points) in;
+	layout (triangle_strip, max_vertices = 4) out;
+
+	uniform float radius;
+
+	void main() {
+		vec4 center = gl_in[0].gl_Position;
+		gl_Position = center + vec4(radius, -radius, 0.0, 0.0);
+		EmitVertex();
+		gl_Position = center + vec4(-radius, -radius, 0.0, 0.0);
+		EmitVertex();
+		gl_Position = center + vec4(radius, radius, 0.0, 0.0);
+		EmitVertex();
+		gl_Position = center + vec4(-radius, radius, 0.0, 0.0);
+		EmitVertex();
+		EndPrimitive();
+	}
+};
+
+enum fs_billboardQuad = MATERIAL_HEADER ~ q{
+
+	in vec4 center;
+
+	out vec4 fragColor;
+
+	uniform float radius;
+	uniform float scrWidth;
+	uniform float scrHeight;
+	uniform Material material;
+
+	void main() {
+		fragColor = vec4(material.diffuse, 1.0);
 	}
 };

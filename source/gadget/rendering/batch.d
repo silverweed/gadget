@@ -5,7 +5,7 @@ import std.string;
 import gadget.rendering.shader;
 import gadget.rendering.interfaces;
 import gadget.rendering.camera;
-import gadget.rendering.presets;
+import gadget.rendering.mesh;
 import gadget.rendering.renderstate;
 import derelict.opengl;
 import derelict.sfml2;
@@ -13,16 +13,17 @@ import gl3n.math : min;
 import gl3n.linalg;
 
 /// A Batch draws n instances of the same shape
-class Batch : Shape {
+class Batch : Mesh {
 
 	GLuint nInstances = 1;
 
-	this(GLuint vao, GLuint count, const Shader shader = defaultShaderInstanced, bool isIndexed = false,
-			const RenderState state = RenderState.global)
+	this(GLuint vao, GLuint count, Shader shader,
+			bool isIndexed = false,
+			RenderState state = RenderState.global)
 	{
 		super(vao, count, shader, isIndexed, state);
 		if (!isIndexed)
-			drawFunc = (const(Shape) shape) {
+			drawFunc = (const(Mesh) shape) {
 				glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
 						(cast(Batch)shape).nInstances);
 			};
