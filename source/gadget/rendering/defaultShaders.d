@@ -5,10 +5,10 @@ import gadget.rendering.material;
 enum MATERIAL_HEADER = `
 	#version 330 core
 
-` ~ GenMaterial!() ~ `
-` ~ GenPointLight!() ~ `
-` ~ GenDirLight!() ~ `
-` ~ GenAmbientLight!();
+` ~ GenMaterial ~ `
+` ~ GenPointLight ~ `
+` ~ GenDirLight ~ `
+` ~ GenAmbientLight;
 
 enum f_addAmbientLight = q{
 	vec3 addAmbientLight(in AmbientLight light) {

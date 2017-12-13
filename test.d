@@ -1,6 +1,7 @@
 import std.stdio;
 import std.file;
 import std.math;
+import std.conv : to;
 import std.random : uniform, uniform01;
 import std.algorithm;
 import gadget.physics;
@@ -19,7 +20,12 @@ enum HEIGHT = 600;
 float deltaTime = 0;
 float lastFrame = 0;
 
-void main() {
+void main(string[] args) {
+
+	auto nCubes = 1000;
+	if (args.length > 1)
+		nCubes = args[1].to!uint;
+
 	//// Init rendering system
 	initRender();
 	auto window = newWindow(WIDTH, HEIGHT);
@@ -35,7 +41,7 @@ void main() {
 	auto camera = new Camera();
 
 	auto point = new Mesh(genPoint(), 1, presetShaders["billboardQuad"]).setColor(1, 1, 0).setPrimitive(GL_POINTS);
-	auto cubes = createCubes(1000);
+	auto cubes = createCubes(nCubes);
 	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0))
 			.setPos(0, -2, 0).setScale(100, 100, 100).setRot(PI/2, 0, 0);
 	ground.uniforms["pointLight.diffuse"] = vec3(1, 1, 1);
@@ -60,7 +66,7 @@ void main() {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
-		auto lightPos = vec3(20 * sin(t), 10f + 10f * sin(t / 5), 20 * cos(t));
+		auto lightPos = vec3(50 * sin(t), 10f + 10f * sin(t / 5), 50 * cos(t));
 
 		// Draw cubes
 		glEnable(GL_CULL_FACE);
