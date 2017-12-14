@@ -54,18 +54,18 @@ class World : Drawable {
 private:
 	void setUniforms(Mesh obj) const {
 		obj.uniforms["ambientLight.color"] = ambientLight.color;
-		obj.uniforms["ambientLight.strength"] = cast(GLfloat)ambientLight.strength;
+		obj.uniforms["ambientLight.strength"] = ambientLight.strength;
 		obj.uniforms["dirLight.direction"] = dirLight.direction;
 		obj.uniforms["dirLight.diffuse"] = dirLight.diffuse;
 		obj.uniforms["nPointLights"] = cast(GLuint)pointLights.length;
-		obj.uniforms["pointLight.position"] = pointLights[0].position;
-		obj.uniforms["pointLight.diffuse"] = pointLights[0].diffuse;
-		obj.uniforms["pointLight.attenuation"] = cast(GLfloat)pointLights[0].attenuation;
-		//foreach (i, pl; pointLights) {
-			//shader.setUni("pointLight[%d].position".format(i), pl.position);
-			//shader.setUni("pointLight[%d].diffuse".format(i), pl.diffuse);
-			//shader.setUni("pointLight[%d].attenuation".format(i), pl.attenuation);
-		//}
+		//obj.uniforms["pointLight.position"] = pointLights[0].position;
+		//obj.uniforms["pointLight.diffuse"] = pointLights[0].diffuse;
+		//obj.uniforms["pointLight.attenuation"] = cast(GLfloat)pointLights[0].attenuation;
+		foreach (i, pl; pointLights) {
+			obj.uniforms["pointLight[%d].position".format(i)] = pl.position;
+			obj.uniforms["pointLight[%d].diffuse".format(i)] = pl.diffuse;
+			obj.uniforms["pointLight[%d].attenuation".format(i)] = pl.attenuation;
+		}
 	}
 
 	Mesh[] objects;

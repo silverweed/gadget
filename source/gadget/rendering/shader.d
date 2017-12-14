@@ -11,7 +11,9 @@ import derelict.opengl;
 import gadget.rendering.utils : NULL;
 import gl3n.linalg;
 
-alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, vec4, mat2, mat3, mat4);
+alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, vec4, mat2, mat3, mat4,
+		const(bool), const(GLint), const(GLuint), const(GLfloat), const(GLdouble), const(vec2),
+		const(vec3), const(vec4), const(mat2), const(mat3), const(mat4));
 
 class Shader {
 	const string name;

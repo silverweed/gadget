@@ -215,7 +215,7 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 	} fs_in;
 
 	uniform vec3 viewPos;
-	uniform PointLight pointLight;
+	uniform PointLight pointLight[MAX_POINT_LIGHTS];
 	uniform int nPointLights;
 	uniform DirLight dirLight;
 	uniform AmbientLight ambientLight;
@@ -224,9 +224,9 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 
 	void main() {
 		vec3 result = addAmbientLight(ambientLight);
-		result += addPointLight(pointLight);
-		//for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
-			//result += addPointLight(pointLight[i]);
+		//result += addPointLight(pointLight);
+		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
+			result += addPointLight(pointLight[i]);
 		result += addDirLight(dirLight);
 
 		fragColor = vec4(result, 1.0);
