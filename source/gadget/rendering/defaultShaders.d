@@ -195,7 +195,7 @@ enum fs_blinnPhong = MATERIAL_HEADER ~ q{
 
 	void main() {
 		vec3 result = addAmbientLight(ambientLight);
-		for (int i = 0; i < nPointLights; ++i)
+		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
 			result += addPointLight(pointLight[i]);
 		result += addDirLight(dirLight);
 
