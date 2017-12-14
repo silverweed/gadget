@@ -1,9 +1,12 @@
 module gadget.rendering.defaultShaders;
 
+import std.conv;
 import gadget.rendering.material;
 
 enum MATERIAL_HEADER = `
-	#version 330 core
+#version 330 core
+
+#define MAX_POINT_LIGHTS ` ~to!string(MAX_POINT_LIGHTS) ~ `
 
 ` ~ GenMaterial ~ `
 ` ~ GenPointLight ~ `
@@ -64,7 +67,7 @@ enum f_addDirLight = q{
 /// Instanced version
 enum fi_addAmbientLight = q{
 	vec3 addAmbientLight(in AmbientLight light) {
-		return light.strength * light.color * fs_in.color;
+		return light.strength * light.color * fs_in.material.diffuse;
 	}
 };
 
@@ -81,9 +84,9 @@ enum fi_addPointLight = q{
 		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
 		vec3 halfDir = normalize(lightDir + viewDir);
 		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
-		vec3 specular = specularStrength * spec * light.diffuse;
+		vec3 specular = fs_in.material.shininess * spec * light.diffuse;
 
-		vec3 result = (diffuse + specular) * fs_in.color;
+		vec3 result = diffuse * fs_in.material.diffuse + specular * fs_in.material.specular;
 		
 		// attenuation
 		float dist = length(fragToLight);
@@ -105,9 +108,9 @@ enum fi_addDirLight = q{
 		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
 		vec3 halfDir = normalize(lightDir + viewDir);
 		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
-		vec3 specular = specularStrength * spec * light.diffuse;
+		vec3 specular = fs_in.material.shininess * spec * light.diffuse;
 
-		vec3 result = (diffuse + specular) * fs_in.color;
+		vec3 result = diffuse * fs_in.material.diffuse + specular * fs_in.material.specular;
 		
 		return result;
 	}
@@ -144,10 +147,12 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 	layout (location = 1) in vec3 aNormal;
 	layout (location = 2) in vec2 aTexCoord;
 	layout (location = 3) in mat4 aInstanceModel;
-	// location = 4 instanceModel
-	// location = 5 instanceModel
-	// location = 6 instanceModel
-	layout (location = 7) in vec3 aColor;
+	// location = 4 aInstanceModel
+	// location = 5 aInstanceModel
+	// location = 6 aInstanceModel
+	layout (location = 7) in vec3 aDiffuse;
+	layout (location = 8) in vec3 aSpecular;
+	layout (location = 9) in float aShininess;
 
 	uniform mat4 vp;
 
@@ -155,14 +160,16 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 		vec3 fragPos;
 		vec3 normal;
 		vec2 texCoord;
-		vec3 color;
+		Material material;
 	} vs_out;
 
 	void main() {
+		vs_out.fragPos = vec3(aInstanceModel * vec4(aPos, 1.0));
 		vs_out.normal = mat3(transpose(inverse(aInstanceModel))) * aNormal;
 		vs_out.texCoord = aTexCoord;
-		vs_out.fragPos = vec3(aInstanceModel * vec4(aPos, 1.0));
-		vs_out.color = aColor;
+		vs_out.material.diffuse = aDiffuse;
+		vs_out.material.specular = aSpecular;
+		vs_out.material.shininess = aShininess;
 		gl_Position = vp * aInstanceModel * vec4(aPos, 1.0);
 	}
 };
@@ -178,7 +185,8 @@ enum fs_blinnPhong = MATERIAL_HEADER ~ q{
 	} fs_in;
 
 	uniform vec3 viewPos;
-	uniform PointLight pointLight;
+	uniform PointLight pointLight[MAX_POINT_LIGHTS];
+	uniform int nPointLights;
 	uniform DirLight dirLight;
 	uniform AmbientLight ambientLight;
 	uniform Material material;
@@ -187,7 +195,8 @@ enum fs_blinnPhong = MATERIAL_HEADER ~ q{
 
 	void main() {
 		vec3 result = addAmbientLight(ambientLight);
-		result += addPointLight(pointLight);
+		for (int i = 0; i < nPointLights; ++i)
+			result += addPointLight(pointLight[i]);
 		result += addDirLight(dirLight);
 
 		fragColor = vec4(result, 1.0);
@@ -202,12 +211,12 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 		vec3 fragPos;
 		vec3 normal;
 		vec2 texCoord;
-		vec3 color;
+		Material material;
 	} fs_in;
 
 	uniform vec3 viewPos;
-	uniform float specularStrength;
-	uniform PointLight pointLight;
+	uniform PointLight pointLight[MAX_POINT_LIGHTS];
+	uniform int nPointLights;
 	uniform DirLight dirLight;
 	uniform AmbientLight ambientLight;
 
@@ -215,7 +224,9 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 
 	void main() {
 		vec3 result = addAmbientLight(ambientLight);
-		result += addPointLight(pointLight);
+		result += addPointLight(pointLight[0]);
+		for (int i = 0; i < nPointLights; ++i)
+			result += addPointLight(pointLight[i]);
 		result += addDirLight(dirLight);
 
 		fragColor = vec4(result, 1.0);

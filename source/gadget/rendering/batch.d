@@ -17,11 +17,8 @@ class Batch : Mesh {
 
 	GLuint nInstances = 1;
 
-	this(GLuint vao, GLuint count, Shader shader,
-			bool isIndexed = false,
-			RenderState state = RenderState.global)
-	{
-		super(vao, count, shader, isIndexed, state);
+	this(GLuint vao, GLuint count, Shader shader, bool isIndexed = false) {
+		super(vao, count, shader, isIndexed);
 		if (!isIndexed)
 			drawFunc = (const(Mesh) shape) {
 				glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
@@ -36,7 +33,7 @@ class Batch : Mesh {
 		glBufferData(GL_ARRAY_BUFFER, T.sizeof * data.length, data.ptr, GL_STATIC_DRAW);
 
 		const loc = glGetAttribLocation(shader.id, name.toStringz());
-		assert(loc >= 0);
+		assert(loc >= 0, "Found no attribute " ~ name ~ " for shader " ~ shader.name);
 		const sz = min(4, T.sizeof);
 
 		glBindVertexArray(vao);
@@ -66,6 +63,6 @@ class Batch : Mesh {
 protected:
 	override void setDefaultUniforms(Camera camera) const {
 		super.setDefaultUniforms(camera);
-		shader.setUni("vp", state.projection * camera.viewMatrix);
+		shader.setUni("vp", camera.projMatrix * camera.viewMatrix);
 	}
 }

@@ -6,6 +6,7 @@ import gl3n.linalg;
 import derelict.opengl;
 import derelict.sfml2.window;
 import gadget.rendering.shader;
+import gadget.rendering.gl;
 import gadget.rendering.renderstate;
 import gadget.rendering.interfaces;
 import gadget.rendering.utils;
@@ -18,7 +19,7 @@ struct Transform {
 	vec3 scale    = vec3(1, 1, 1);
 }
 
-class Mesh : Drawable {
+class Mesh : ShaderDrawable {
 	Transform transform;
 	Material material;
 	Uniform[string] uniforms;
@@ -27,16 +28,12 @@ class Mesh : Drawable {
 	GLuint vao;
 	/// This is the indices count if the mesh is indexed
 	GLuint vertexCount;
-	RenderState state;
+	bool cullFace = false;
 
-	this(GLuint vao, GLuint count, Shader shader,
-			bool isIndexed = false,
-			RenderState state = RenderState.global)
-	{
+	this(GLuint vao, GLuint count, Shader shader, bool isIndexed = false) {
 		this.vao = vao;
 		this.shader = shader;
 		vertexCount = count;
-		this.state = state;
 		material.diffuse = vec3(0, 0, 0);
 		material.specular = vec3(1, 1, 1);
 		material.shininess = 0.5;
@@ -58,7 +55,14 @@ class Mesh : Drawable {
 		foreach (k, v; uniforms) {
 			shader.setUni(k, v);
 		}
+
+		auto wasCullEnabled = glIsEnabled(GL_CULL_FACE);
+		cull(cullFace);
+
 		drawFunc(this);
+
+		cull(wasCullEnabled);
+
 		glBindVertexArray(0);
 	}
 
@@ -92,6 +96,8 @@ class Mesh : Drawable {
 		return this;
 	}
 
+	override Shader getShader() { return shader; }
+
 protected:
 	void setDefaultUniforms(Camera camera) const {
 		shader.setUni("material.diffuse", material.diffuse);
@@ -102,7 +108,7 @@ protected:
 				.translate(transform.position);
 		shader.setUni("model", model);
 		shader.setUni("viewPos", camera.position);
-		shader.setUni("mvp", state.projection * camera.viewMatrix * model);
+		shader.setUni("mvp", camera.projMatrix * camera.viewMatrix * model);
 	}
 	void function(const(Mesh) shape) drawFunc;
 

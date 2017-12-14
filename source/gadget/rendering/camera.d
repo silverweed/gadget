@@ -19,6 +19,10 @@ class Camera {
 		return mat4.look_at(position, position + front, up);
 	}
 
+	mat4 projMatrix() const {
+		return mat4.perspective(width, height, fov, near, far);
+	}
+
 	void move(Direction dir, float dt) {
 		immutable v = moveSpeed * dt;
 		final switch (dir) {
@@ -77,4 +81,9 @@ class Camera {
 	float sensitivity = 0.003;
 	float fov = 45;
 	float moveSpeed = 6f;
+	float width = 6f;
+	float height = 6f;
+	float near = 0.1;
+	float far = 5000f;
+
 }

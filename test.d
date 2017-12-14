@@ -39,21 +39,30 @@ void main(string[] args) {
 	glCullFace(GL_BACK);
 
 	auto camera = new Camera();
+	auto world = new World();
 
 	auto point = new Mesh(genPoint(), 1, presetShaders["billboardQuad"]).setColor(1, 1, 0).setPrimitive(GL_POINTS);
-	auto cubes = createCubes(nCubes);
+	world.addObject(point);
+	world.addObject(createCubes(nCubes));
 	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0))
 			.setPos(0, -2, 0).setScale(100, 100, 100).setRot(PI/2, 0, 0);
-	ground.uniforms["pointLight.diffuse"] = vec3(1, 1, 1);
-	ground.uniforms["pointLight.attenuation"] = 0.01;
-	ground.uniforms["ambientLight.color"] = vec3(1, 1, 1);
-	ground.uniforms["ambientLight.strength"] = 0.1;
-	ground.uniforms["dirLight.diffuse"] = vec3(0.3, 0.3, 0.3);
-	ground.uniforms["dirLight.direction"] = vec3(0.4, 0.4, 0.4);
+	world.ambientLight = AmbientLight(
+		vec3(1, 1, 1), // color 
+		0.2,           // strength
+	);
+	world.dirLight = DirLight(
+		vec3(0.4, 0.4, 0.4), // direction
+		vec3(0.03, 0.03, 0.03), // diffuse
+	);
+	//world.addPointLight(PointLight(
+		//vec3(0, 0, 0), // position
+		//vec3(1, 1, 1), // diffuse
+		//0.00,          // attenuation
+	//));
+	world.addObject(ground);
 
 	//RenderState.global.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
-	RenderState.global.clearColor = vec4(0.06, 0.0, 0.1, 1.0);
-	RenderState.global.projection = mat4.perspective(6, 6, camera.fov, 0.1, 5000f);
+	RenderState.global.clearColor = vec4(0.01, 0.0, 0.09, 1.0);
 
 	camera.position.z = 4;
 	camera.moveSpeed = 12f;
@@ -66,24 +75,18 @@ void main(string[] args) {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
-		auto lightPos = vec3(50 * sin(t), 10f + 10f * sin(t / 5), 50 * cos(t));
+		//auto lightPos = vec3(50 * sin(t), 10f + 10f * sin(t / 5), 50 * cos(t));
+		world.dirLight.direction = vec3(1, sin(t), 1);
 
-		// Draw cubes
-		glEnable(GL_CULL_FACE);
-		cubes.uniforms["pointLight.position"] = lightPos;
-		cubes.draw(window, camera);
+		// Update light gizmo
+		//point.uniforms["radius"] = 0.8;
+		//point.uniforms["scrWidth"] = RenderState.global.screenSize.x;
+		//point.uniforms["scrHeight"] = RenderState.global.screenSize.y;
+		//point.setPos(lightPos);
 
-		// Draw ground
-		glDisable(GL_CULL_FACE);
-		ground.uniforms["pointLight.position"] = lightPos;
-		ground.draw(window, camera);
+		//world.getPointLight(0).position = lightPos;
 
-		// Draw light
-		point.uniforms["radius"] = 0.3;
-		point.uniforms["scrWidth"] = RenderState.global.screenSize.x;
-		point.uniforms["scrHeight"] = RenderState.global.screenSize.y;
-		point.setPos(lightPos);
-		point.draw(window, camera);
+		world.draw(window, camera);
 
 		updateMouse(window, camera);
 		fps.update(deltaTime);
@@ -108,7 +111,7 @@ void processInput(sfWindow *window, Camera camera, RenderState state) {
 void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 	switch (event.type) {
 	case sfEvtResized:
-		handleResize(event);
+		handleResize(event, camera);
 		break;
 	case sfEvtMouseWheelMoved:
 		camera.zoom(event.mouseWheel.delta);
@@ -141,16 +144,12 @@ void updateMouse(sfWindow *window, Camera camera) {
 
 auto createCubes(uint n) {
 	auto cubes = new Batch(genCube(), cubeVertices.length, presetShaders["defaultInstanced"]);
-	cubes.uniforms["pointLight.diffuse"] = vec3(1, 1, 1);
-	cubes.uniforms["pointLight.attenuation"] = 0.01;
-	cubes.uniforms["ambientLight.color"] = vec3(1, 1, 1);
-	cubes.uniforms["ambientLight.strength"] = 0.01;
-	cubes.uniforms["dirLight.diffuse"] = vec3(0.1, 0.1, 0.1);
-	cubes.uniforms["dirLight.direction"] = vec3(1, 0, 0);
 	GLuint iVbo;
 	{
-		mat4[] cubeModels = new mat4[n];
-		vec3[] cubeColors = new vec3[cubeModels.length];
+		auto cubeModels = new mat4[n];
+		auto cubeDiffuse = new vec3[cubeModels.length];
+		auto cubeSpecular = new vec3[cubeModels.length];
+		auto cubeShininess = new float[cubeModels.length];
 		for (int i = 0; i < cubeModels.length; ++i) {
 			auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
 			auto rot = quat.euler_rotation(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
@@ -161,11 +160,15 @@ auto createCubes(uint n) {
 						.rotate(rot.alpha, rot.axis)
 						.scale(scale.x, scale.y, scale.z)
 						.transposed(); // !!!
-			cubeColors[i] = vec3(uniform01(), uniform01(), uniform01());
+			cubeDiffuse[i] = vec3(uniform01(), uniform01(), uniform01());
+			cubeSpecular[i] = vec3(uniform01(), uniform01(), uniform01());
+			cubeShininess[i] = uniform(0, 100);
 		}
 		cubes.nInstances = cast(uint)cubeModels.length;
 		cubes.setData("aInstanceModel", cubeModels);
-		cubes.setData("aColor", cubeColors);
+		cubes.setData("aDiffuse", cubeDiffuse);
+		cubes.setData("aSpecular", cubeSpecular);
+		cubes.setData("aShininess", cubeShininess);
 	}
 	return cubes;
 }

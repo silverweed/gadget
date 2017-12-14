@@ -20,9 +20,9 @@ private class PresetShaderCache {
 		if (name in cache) return cache[name];
 		Shader shader;
 		switch (name) {
-		case "default": shader = new Shader(vs_posNormTex, fs_blinnPhong); break;
-		case "defaultInstanced": shader = new Shader(vs_posNormTexInstanced, fs_blinnPhongInstanced); break;
-		case "billboardQuad": shader = new Shader(vs_billboardQuad, fs_billboardQuad, gs_billboardQuad); break;
+		case "default": shader = new Shader(vs_posNormTex, fs_blinnPhong, null, name); break;
+		case "defaultInstanced": shader = new Shader(vs_posNormTexInstanced, fs_blinnPhongInstanced, null, name); break;
+		case "billboardQuad": shader = new Shader(vs_billboardQuad, fs_billboardQuad, gs_billboardQuad, name); break;
 		default: assert(0, "Invalid preset shader: " ~ name);
 		}
 		return cache[name] = shader;

@@ -36,3 +36,6 @@ mixin(GenMaterial);
 mixin(GenPointLight);
 mixin(GenDirLight);
 mixin(GenAmbientLight);
+
+/// Maximum number of point lights supported in default shaders
+enum MAX_POINT_LIGHTS = 10;

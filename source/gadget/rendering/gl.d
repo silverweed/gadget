@@ -77,11 +77,14 @@ void quitRender() {
 	running = false;
 }
 
-auto handleResize(in sfEvent event) {
+auto handleResize(in sfEvent event, Camera camera) {
 	auto state = RenderState.global;
 	state.screenSize.x = event.size.width;
 	state.screenSize.y = event.size.height;
 	glViewport(0, 0, state.screenSize.x, state.screenSize.y);
+	writeln("resize to ", state.screenSize.x, " ", state.screenSize.y);
+	camera.width = state.screenSize.x;
+	camera.height = state.screenSize.y;
 }
 
 void drawElements(GLuint vao, GLuint count, GLenum primitive = GL_TRIANGLES) {
@@ -94,4 +97,11 @@ void drawArrays(GLuint vao, GLuint count, GLenum primitive = GL_TRIANGLES) {
 	glBindVertexArray(vao);
 	glDrawArrays(primitive, 0, count);
 	glBindVertexArray(0);
+}
+
+void cull(GLubyte cullFace) {
+	if (cullFace)
+		glEnable(GL_CULL_FACE);
+	else
+		glDisable(GL_CULL_FACE);
 }

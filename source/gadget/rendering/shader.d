@@ -2,6 +2,7 @@ module gadget.rendering.shader;
 
 import std.file : readText;
 import std.stdio;
+import std.string;
 import std.traits;
 import std.variant;
 import std.format : format;
@@ -13,6 +14,8 @@ import gl3n.linalg;
 alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, vec4, mat2, mat3, mat4);
 
 class Shader {
+	const string name;
+
 	static Shader fromFiles(string vsPath, string fsPath, string gsPath = null) {
 		string vsCode, fsCode, gsCode;
 		try {
@@ -26,42 +29,46 @@ class Shader {
 				vsPath, fsPath, gsPath == null ? "" : "+ " ~ gsPath,
 				e.toString()));
 		}
-		return new Shader(vsCode, fsCode, gsPath == null ? null : gsCode);
+		return new Shader(vsCode, fsCode, gsPath == null ? null : gsCode,
+			vsPath ~ " + " ~ fsPath ~ " + " ~ gsPath);
+
 	}
 
-	this(string vsCode, string fsCode, string gsCode = null) {
+	this(string vsCode, string fsCode, string gsCode = null, string name = "") {
+		this.name = name;
+
 		// Compile the shaders
-		debug writeln("compiling vertex shader");
+		debug writefln("[%s] compiling vertex shader", name);
 		const vsId = glCreateShader(GL_VERTEX_SHADER);
 		const char* vsCodePtr = vsCode.toStringz();
 		glShaderSource(vsId, 1, &vsCodePtr, null);
 		glCompileShader(vsId);
-		checkErr!"Vertex"(vsId);
+		checkErr!"Vertex"(vsId, vsCode);
 
-		debug writeln("compiling fragment shader");
+		debug writefln("[%s] compiling fragment shader", name);
 		const fsId = glCreateShader(GL_FRAGMENT_SHADER);
 		const char* fsCodePtr = fsCode.toStringz();
 		glShaderSource(fsId, 1, &fsCodePtr, null);
 		glCompileShader(fsId);
-		checkErr!"Fragment"(fsId);
+		checkErr!"Fragment"(fsId, fsCode);
 
 		GLint gsId = -1;
 		if (gsCode != null) {
-			debug writeln("compiling geometry shader");
+			debug writefln("[%s] compiling geometry shader", name);
 			gsId = glCreateShader(GL_GEOMETRY_SHADER);
 			const char* gsCodePtr = gsCode.toStringz();
 			glShaderSource(gsId, 1, &gsCodePtr, null);
 			glCompileShader(gsId);
-			checkErr!"Geometry"(gsId);
+			checkErr!"Geometry"(gsId, gsCode);
 		}
 		_id = glCreateProgram();
 		glAttachShader(_id, vsId);
 		glAttachShader(_id, fsId);
 		if (gsId >= 0)
 			glAttachShader(_id, gsId);
-		debug writeln("linking shader");
+		debug writefln("[%s] linking shader", name);
 		glLinkProgram(_id);
-		checkErr!"Program"(_id);
+		checkErr!"Program"(_id, vsCode, fsCode, gsCode);
 		// Cleanup
 		glDeleteShader(vsId);
 		glDeleteShader(fsId);
@@ -78,6 +85,7 @@ class Shader {
 
 	/// Sets a uniform to `val`.
 	void setUni(T)(in string name, inout T val) const {
+		writeln("setting uni ", name, " to ", val);
 		static if (is(T == bool) || isImplicitlyConvertible!(T, GLint)) {
 			glUniform1i(glGetUniformLocation(_id, cast(const(char*))name), cast(GLint)val);
 		} else static if (isImplicitlyConvertible!(T, GLuint)) {
@@ -134,7 +142,7 @@ class Shader {
 	}
 
 private:
-	void checkErr(string type)(uint _id) {
+	void checkErr(string type, A...)(uint _id, A codes) {
 		int success = 0;
 		char[1024] infoLog;
 		static if (type != "Program") {
@@ -142,12 +150,28 @@ private:
 			if (!success) {
 				glGetShaderInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
 				stderr.writeln("[ ERR ] ", type, " Shader failed to compile: ", infoLog);
+				stderr.writeln("  Shader code looks like this:");
+				auto l = 0;
+				foreach (c; codes) {
+					auto lines = c.split("\n");
+					foreach (line; lines)
+						stderr.writefln("%d %s", l++, line);
+					stderr.writeln("----------------");
+				}
 			}
 		} else {
 			glGetProgramiv(_id, GL_LINK_STATUS, &success);
 			if (!success) {
-				glGetShaderInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
+				glGetProgramInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
 				stderr.writeln("[ ERR ] Shader failed to link: ", infoLog);
+				stderr.writeln("  Shader code looks like this:");
+				auto l = 0;
+				foreach (c; codes) {
+					auto lines = c.split("\n");
+					foreach (line; lines)
+						stderr.writefln("%d %s", l++, line);
+					stderr.writeln("----------------");
+				}
 			}
 		}
 	}
