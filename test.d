@@ -29,14 +29,6 @@ void main(string[] args) {
 	//// Init rendering system
 	initRender();
 	auto window = newWindow(WIDTH, HEIGHT);
-	sfWindow_setMouseCursorVisible(window, false);
-	sfWindow_setMouseCursorGrabbed(window, true);
-	sfWindow_setFramerateLimit(window, 60);
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glDepthMask(GL_TRUE);
-	glCullFace(GL_BACK);
 
 	enum nLights = 10;
 
@@ -158,30 +150,28 @@ void updateMouse(sfWindow *window, Camera camera) {
 auto createCubes(uint n) {
 	auto cubes = new Batch(genCube(), cubeVertices.length, presetShaders["defaultInstanced"]);
 	GLuint iVbo;
-	{
-		auto cubeModels = new mat4[n];
-		auto cubeDiffuse = new vec3[cubeModels.length];
-		auto cubeSpecular = new vec3[cubeModels.length];
-		auto cubeShininess = new float[cubeModels.length];
-		for (int i = 0; i < cubeModels.length; ++i) {
-			auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
-			auto rot = quat.euler_rotation(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
-			auto scalex = uniform(0.3, 2);
-			auto scale = vec3(scalex, scalex + uniform(-0.5, 1), scalex + uniform(-0.5, 1));
-			cubeModels[i] = mat4.identity
-						.translate(pos.x, pos.y, pos.z)
-						.rotate(rot.alpha, rot.axis)
-						.scale(scale.x, scale.y, scale.z)
-						.transposed(); // !!!
-			cubeDiffuse[i] = vec3(uniform01(), uniform01(), uniform01());
-			cubeSpecular[i] = vec3(uniform01(), uniform01(), uniform01());
-			cubeShininess[i] = uniform(0, 10);
-		}
-		cubes.nInstances = cast(uint)cubeModels.length;
-		cubes.setData("aInstanceModel", cubeModels);
-		cubes.setData("aDiffuse", cubeDiffuse);
-		cubes.setData("aSpecular", cubeSpecular);
-		cubes.setData("aShininess", cubeShininess);
+	auto cubeModels = new mat4[n];
+	auto cubeDiffuse = new vec3[cubeModels.length];
+	auto cubeSpecular = new vec3[cubeModels.length];
+	auto cubeShininess = new float[cubeModels.length];
+	for (int i = 0; i < cubeModels.length; ++i) {
+		auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
+		auto rot = quat.euler_rotation(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
+		auto scalex = uniform(0.3, 2);
+		auto scale = vec3(scalex, scalex + uniform(-0.5, 1), scalex + uniform(-0.5, 1));
+		cubeModels[i] = mat4.identity
+					.translate(pos.x, pos.y, pos.z)
+					.rotate(rot.alpha, rot.axis)
+					.scale(scale.x, scale.y, scale.z)
+					.transposed(); // !!!
+		cubeDiffuse[i] = vec3(uniform01(), uniform01(), uniform01());
+		cubeSpecular[i] = vec3(uniform01(), uniform01(), uniform01());
+		cubeShininess[i] = uniform(0, 10);
 	}
+	cubes.nInstances = cast(uint)cubeModels.length;
+	cubes.setData("aInstanceModel", cubeModels);
+	cubes.setData("aDiffuse", cubeDiffuse);
+	cubes.setData("aSpecular", cubeSpecular);
+	cubes.setData("aShininess", cubeShininess);
 	return cubes;
 }

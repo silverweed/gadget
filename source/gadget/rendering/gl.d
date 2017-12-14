@@ -46,6 +46,16 @@ auto newWindow(uint w, uint h, const char* title = "Unnamed Gadget App", uint fl
 
 	debug writeln("Using OpenGL version: ", ctxSettings.majorVersion, ".", ctxSettings.minorVersion);
 
+	// Set reasonable defaults
+	sfWindow_setMouseCursorVisible(window, false);
+	sfWindow_setMouseCursorGrabbed(window, true);
+	sfWindow_setFramerateLimit(window, 60);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glDepthMask(GL_TRUE);
+	glCullFace(GL_BACK);
+
 	return window;
 }
 
