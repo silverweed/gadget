@@ -4,6 +4,7 @@ import std.stdio : stderr;
 import std.string;
 import std.algorithm;
 import derelict.sfml2.window;
+import derelict.opengl;
 import gadget.rendering.interfaces;
 import gadget.rendering.material;
 import gadget.rendering.camera;
@@ -45,21 +46,26 @@ class World : Drawable {
 
 	void draw(sfWindow* window, Camera camera) {
 		foreach (obj; objects) {
-			setUniforms(obj.shader);
+			setUniforms(obj);
 			obj.draw(window, camera);
 		}
 	}
 
 private:
-	void setUniforms(Shader shader) const {
-		foreach (i, val; ambientLight.tupleof)
-			shader.setUni("ambientLight.%s".format(__traits(identifier, ambientLight.tupleof[i])), val);
-		foreach (i, val; dirLight.tupleof)
-			shader.setUni("dirLight.%s".format(__traits(identifier, dirLight.tupleof[i])), val);
-		shader.setUni("nPointLights", pointLights.length);
-		foreach (i, pl; pointLights)
-			foreach (j, val; pl.tupleof)
-				shader.setUni("pointLights[%d].%s".format(i, __traits(identifier, pl.tupleof[j])), val);
+	void setUniforms(Mesh obj) const {
+		obj.uniforms["ambientLight.color"] = ambientLight.color;
+		obj.uniforms["ambientLight.strength"] = cast(GLfloat)ambientLight.strength;
+		obj.uniforms["dirLight.direction"] = dirLight.direction;
+		obj.uniforms["dirLight.diffuse"] = dirLight.diffuse;
+		obj.uniforms["nPointLights"] = cast(GLuint)pointLights.length;
+		obj.uniforms["pointLight.position"] = pointLights[0].position;
+		obj.uniforms["pointLight.diffuse"] = pointLights[0].diffuse;
+		obj.uniforms["pointLight.attenuation"] = cast(GLfloat)pointLights[0].attenuation;
+		//foreach (i, pl; pointLights) {
+			//shader.setUni("pointLight[%d].position".format(i), pl.position);
+			//shader.setUni("pointLight[%d].diffuse".format(i), pl.diffuse);
+			//shader.setUni("pointLight[%d].attenuation".format(i), pl.attenuation);
+		//}
 	}
 
 	Mesh[] objects;

@@ -43,25 +43,25 @@ void main(string[] args) {
 
 	auto point = new Mesh(genPoint(), 1, presetShaders["billboardQuad"]).setColor(1, 1, 0).setPrimitive(GL_POINTS);
 	world.addObject(point);
-	world.addObject(createCubes(nCubes));
+	auto cubes = createCubes(nCubes);
+	world.addObject(cubes);
 	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0))
 			.setPos(0, -2, 0).setScale(100, 100, 100).setRot(PI/2, 0, 0);
 	world.ambientLight = AmbientLight(
-		vec3(1, 1, 1), // color 
-		0.2,           // strength
+		vec3(1, 1, 1), // color
+		0.15,           // strength
 	);
 	world.dirLight = DirLight(
 		vec3(0.4, 0.4, 0.4), // direction
-		vec3(0.03, 0.03, 0.03), // diffuse
+		vec3(0.05, 0.05, 0.05), // diffuse
 	);
-	//world.addPointLight(PointLight(
-		//vec3(0, 0, 0), // position
-		//vec3(1, 1, 1), // diffuse
-		//0.00,          // attenuation
-	//));
+	world.addPointLight(PointLight(
+		vec3(0, 0, 0), // position
+		vec3(1, 1, 1), // diffuse
+		0.01,          // attenuation
+	));
 	world.addObject(ground);
 
-	//RenderState.global.clearColor = vec4(0.2, 0.5, 0.6, 1.0);
 	RenderState.global.clearColor = vec4(0.01, 0.0, 0.09, 1.0);
 
 	camera.position.z = 4;
@@ -75,16 +75,16 @@ void main(string[] args) {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
-		//auto lightPos = vec3(50 * sin(t), 10f + 10f * sin(t / 5), 50 * cos(t));
+		auto lightPos = vec3(50 * sin(t), 10f + 10f * sin(t / 5), 50 * cos(t));
 		world.dirLight.direction = vec3(1, sin(t), 1);
 
 		// Update light gizmo
-		//point.uniforms["radius"] = 0.8;
-		//point.uniforms["scrWidth"] = RenderState.global.screenSize.x;
-		//point.uniforms["scrHeight"] = RenderState.global.screenSize.y;
-		//point.setPos(lightPos);
+		point.uniforms["radius"] = 0.8;
+		point.uniforms["scrWidth"] = RenderState.global.screenSize.x;
+		point.uniforms["scrHeight"] = RenderState.global.screenSize.y;
+		point.setPos(lightPos);
 
-		//world.getPointLight(0).position = lightPos;
+		world.getPointLight(0).position = lightPos;
 
 		world.draw(window, camera);
 
@@ -162,7 +162,7 @@ auto createCubes(uint n) {
 						.transposed(); // !!!
 			cubeDiffuse[i] = vec3(uniform01(), uniform01(), uniform01());
 			cubeSpecular[i] = vec3(uniform01(), uniform01(), uniform01());
-			cubeShininess[i] = uniform(0, 100);
+			cubeShininess[i] = uniform(0, 10);
 		}
 		cubes.nInstances = cast(uint)cubeModels.length;
 		cubes.setData("aInstanceModel", cubeModels);

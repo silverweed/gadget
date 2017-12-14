@@ -100,15 +100,15 @@ class Mesh : ShaderDrawable {
 
 protected:
 	void setDefaultUniforms(Camera camera) const {
-		shader.setUni("material.diffuse", material.diffuse);
-		shader.setUni("material.shininess", material.shininess);
+		shader.setVec3("material.diffuse", material.diffuse);
+		shader.setFloat("material.shininess", material.shininess);
 		const model = mat4.identity
 				.scale(transform.scale.x, transform.scale.y, transform.scale.z)
 				.rotate(transform.rotation.alpha, transform.rotation.axis)
 				.translate(transform.position);
-		shader.setUni("model", model);
-		shader.setUni("viewPos", camera.position);
-		shader.setUni("mvp", camera.projMatrix * camera.viewMatrix * model);
+		shader.setMat4("model", model);
+		shader.setVec3("viewPos", camera.position);
+		shader.setMat4("mvp", camera.projMatrix * camera.viewMatrix * model);
 	}
 	void function(const(Mesh) shape) drawFunc;
 

@@ -84,61 +84,53 @@ class Shader {
 	}
 
 	/// Sets a uniform to `val`.
-	void setUni(T)(in string name, inout T val) const {
-		writeln("setting uni ", name, " to ", val);
-		static if (is(T == bool) || isImplicitlyConvertible!(T, GLint)) {
-			glUniform1i(glGetUniformLocation(_id, cast(const(char*))name), cast(GLint)val);
-		} else static if (isImplicitlyConvertible!(T, GLuint)) {
-			glUniform1ui(glGetUniformLocation(_id, cast(const(char*))name), cast(GLuint)val);
-		} else static if (isImplicitlyConvertible!(T, GLfloat) || isImplicitlyConvertible!(T, GLdouble)) {
-			glUniform1f(glGetUniformLocation(_id, cast(const(char*))name), cast(GLfloat)val);
-		} else static if (is(T == vec2)) {
-			glUniform2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
-		} else static if (is(T == vec3)) {
-			glUniform3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
-		} else static if (is(T == vec4)) {
-			glUniform4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
-		} else static if (is(T == mat2)) {
-			glUniformMatrix2fv(glGetUniformLocation(_id, cast(const(char*))name),
-					1, GL_TRUE, val.value_ptr);
-		} else static if (is(T == mat3)) {
-			glUniformMatrix3fv(glGetUniformLocation(_id, cast(const(char*))name),
-					1, GL_TRUE, val.value_ptr);
-		} else static if (is(T == mat4)) {
-			glUniformMatrix4fv(glGetUniformLocation(_id, cast(const(char*))name),
-					1, GL_TRUE, val.value_ptr);
-		} else static if (is(T == Uniform)) {
-			// Runtime dispatch
-			if (val.convertsTo!(GLint)) setUni(name, val.get!(GLint));
-			else if (val.convertsTo!(GLfloat)) setUni(name, val.get!(GLfloat));
-			else if (val.convertsTo!(GLdouble)) setUni(name, val.get!(GLdouble));
-			else if (val.convertsTo!(vec2)) setUni(name, val.get!(vec2));
-			else if (val.convertsTo!(vec3)) setUni(name, val.get!(vec3));
-			else if (val.convertsTo!(vec4)) setUni(name, val.get!(vec4));
-			else if (val.convertsTo!(mat2)) setUni(name, val.get!(mat2));
-			else if (val.convertsTo!(mat3)) setUni(name, val.get!(mat3));
-			else if (val.convertsTo!(mat4)) setUni(name, val.get!(mat4));
-			else assert(0, "Invalid type for uniform " ~ name ~ " of type " ~ val.type.toString() ~ "!");
-		} else static assert(0);
+	void setInt(in string name, inout GLint val) const {
+		glUniform1i(glGetUniformLocation(_id, cast(const(char*))name), val);
 	}
-
-	/// Sets a uniform array to `vals`
-	void setUni(T...)(in string name, inout T vals) const {
-		static if(isImplicitlyConvertible!(T[0], GLfloat)) {
-			static if (vals.length == 2) {
-				glUniform2f(glGetUniformLocation(_id, cast(const(char*))name), vals[0], vals[1]);
-			} else static if (vals.length == 3) {
-				glUniform3f(glGetUniformLocation(_id, cast(const(char*))name),
-						vals[0], vals[1], vals[2]);
-			} else static if (vals.length == 4) {
-				glUniform4f(glGetUniformLocation(_id, cast(const(char*))name),
-						vals[0], vals[1], vals[2], vals[3]);
-			} else {
-				static assert(0);
-			}
-		} else {
-			static assert(0);
-		}
+	void setUint(in string name, inout GLuint val) const {
+		glUniform1ui(glGetUniformLocation(_id, cast(const(char*))name), val);
+	}
+	void setFloat(in string name, inout GLfloat val) const {
+		glUniform1f(glGetUniformLocation(_id, cast(const(char*))name), val);
+	}
+	void setVec2(in string name, inout vec2 val) const {
+		glUniform2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
+	}
+	void setVec2(in string name, inout GLfloat val1, inout GLfloat val2) const {
+		glUniform2f(glGetUniformLocation(_id, cast(const(char*))name), val1, val2);
+	}
+	void setVec3(in string name, inout vec3 val) const {
+		glUniform3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
+	}
+	void setVec3(in string name, inout GLfloat val1, inout GLfloat val2, inout GLfloat val3) const {
+		glUniform3f(glGetUniformLocation(_id, cast(const(char*))name), val1, val2, val3);
+	}
+	void setVec4(in string name, inout vec4 val) const {
+		glUniform4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
+	}
+	void setVec3(in string name, inout GLfloat val1, inout GLfloat val2, inout GLfloat val3, inout GLfloat val4) const {
+		glUniform4f(glGetUniformLocation(_id, cast(const(char*))name), val1, val2, val3, val4);
+	}
+	void setMat2(in string name, inout mat2 val) const {
+		glUniformMatrix2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, GL_TRUE, val.value_ptr);
+	}
+	void setMat3(in string name, inout mat3 val) const {
+		glUniformMatrix3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, GL_TRUE, val.value_ptr);
+	}
+	void setMat4(in string name, inout mat4 val) const {
+		glUniformMatrix4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, GL_TRUE, val.value_ptr);
+	}
+	void setUni(in string name, inout Uniform val) const {
+		if (val.convertsTo!(GLint) || val.convertsTo!(const GLint)) setInt(name, val.get!(const GLint));
+		else if (val.convertsTo!(GLfloat) || val.convertsTo!(const GLfloat)) setFloat(name, val.get!(const GLfloat));
+		else if (val.convertsTo!(GLdouble) || val.convertsTo!(const GLdouble)) setFloat(name, val.get!(const GLdouble));
+		else if (val.convertsTo!(vec2) || val.convertsTo!(const vec2)) setVec2(name, val.get!(const vec2));
+		else if (val.convertsTo!(vec3) || val.convertsTo!(const vec3)) setVec3(name, val.get!(const vec3));
+		else if (val.convertsTo!(vec4) || val.convertsTo!(const vec4)) setVec4(name, val.get!(const vec4));
+		else if (val.convertsTo!(mat2) || val.convertsTo!(const mat2)) setMat2(name, val.get!(const mat2));
+		else if (val.convertsTo!(mat3) || val.convertsTo!(const mat3)) setMat3(name, val.get!(const mat3));
+		else if (val.convertsTo!(mat4) || val.convertsTo!(const mat4)) setMat4(name, val.get!(const mat4));
+		else assert(0, "Invalid type for uniform " ~ name ~ " of type " ~ val.type.toString() ~ "!");
 	}
 
 private:

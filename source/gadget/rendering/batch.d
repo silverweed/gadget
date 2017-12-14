@@ -63,6 +63,6 @@ class Batch : Mesh {
 protected:
 	override void setDefaultUniforms(Camera camera) const {
 		super.setDefaultUniforms(camera);
-		shader.setUni("vp", camera.projMatrix * camera.viewMatrix);
+		shader.setMat4("vp", camera.projMatrix * camera.viewMatrix);
 	}
 }
