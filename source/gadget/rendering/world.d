@@ -21,10 +21,10 @@ class World {
 	PointLight[] pointLights;
 }
 
-void draw(World world, sfWindow* window, Camera camera) {
+void draw(World world, Camera camera) {
 	foreach (obj; world.objects) {
 		world.setUniforms(obj);
-		obj.draw(window, camera);
+		obj.draw(camera);
 	}
 }
 

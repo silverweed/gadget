@@ -46,7 +46,7 @@ class Mesh {
 			};
 	}
 
-	void draw(sfWindow *window, Camera camera) const {
+	void draw(Camera camera) const {
 		glBindVertexArray(vao);
 		shader.use();
 		setDefaultUniforms(camera);

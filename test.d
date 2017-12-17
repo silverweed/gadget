@@ -94,7 +94,7 @@ void main(string[] args) {
 			world.pointLights[i].position = lightPos;
 		}
 
-		world.draw(window, camera);
+		world.draw(camera);
 
 		updateMouse(window, camera);
 		fps.update(deltaTime);
