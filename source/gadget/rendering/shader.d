@@ -8,8 +8,9 @@ import std.variant;
 import std.format : format;
 import std.string : toStringz;
 import derelict.opengl;
-import gadget.rendering.utils : NULL;
 import gl3n.linalg;
+import gadget.rendering.utils : NULL;
+import gadget.rendering.material;
 
 alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, vec4, mat2, mat3, mat4,
 		const(bool), const(GLint), const(GLuint), const(GLfloat), const(GLdouble), const(vec2),
@@ -17,6 +18,8 @@ alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, v
 
 class Shader {
 	const string name;
+
+	@property auto id() const { return _id; }
 
 	static Shader fromFiles(string vsPath, string fsPath, string gsPath = null) {
 		string vsCode, fsCode, gsCode;
@@ -78,97 +81,124 @@ class Shader {
 			glDeleteShader(gsId);
 	}
 
-	int id() const { return _id; }
-
-	/// Sets this shader as current.
-	void use() const {
-		glUseProgram(_id);
-	}
-
-	/// Sets a uniform to `val`.
-	void setInt(in string name, inout GLint val) const {
-		glUniform1i(glGetUniformLocation(_id, cast(const(char*))name), val);
-	}
-	void setUint(in string name, inout GLuint val) const {
-		glUniform1ui(glGetUniformLocation(_id, cast(const(char*))name), val);
-	}
-	void setFloat(in string name, inout GLfloat val) const {
-		glUniform1f(glGetUniformLocation(_id, cast(const(char*))name), val);
-	}
-	void setVec2(in string name, inout vec2 val) const {
-		glUniform2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
-	}
-	void setVec2(in string name, inout GLfloat val1, inout GLfloat val2) const {
-		glUniform2f(glGetUniformLocation(_id, cast(const(char*))name), val1, val2);
-	}
-	void setVec3(in string name, inout vec3 val) const {
-		glUniform3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
-	}
-	void setVec3(in string name, inout GLfloat val1, inout GLfloat val2, inout GLfloat val3) const {
-		glUniform3f(glGetUniformLocation(_id, cast(const(char*))name), val1, val2, val3);
-	}
-	void setVec4(in string name, inout vec4 val) const {
-		glUniform4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, val.value_ptr);
-	}
-	void setVec3(in string name, inout GLfloat val1, inout GLfloat val2, inout GLfloat val3, inout GLfloat val4) const {
-		glUniform4f(glGetUniformLocation(_id, cast(const(char*))name), val1, val2, val3, val4);
-	}
-	void setMat2(in string name, inout mat2 val) const {
-		glUniformMatrix2fv(glGetUniformLocation(_id, cast(const(char*))name), 1, GL_TRUE, val.value_ptr);
-	}
-	void setMat3(in string name, inout mat3 val) const {
-		glUniformMatrix3fv(glGetUniformLocation(_id, cast(const(char*))name), 1, GL_TRUE, val.value_ptr);
-	}
-	void setMat4(in string name, inout mat4 val) const {
-		glUniformMatrix4fv(glGetUniformLocation(_id, cast(const(char*))name), 1, GL_TRUE, val.value_ptr);
-	}
-	void setUni(in string name, inout Uniform val) const {
-		if (val.convertsTo!(GLint) || val.convertsTo!(const GLint)) setInt(name, val.get!(const GLint));
-		else if (val.convertsTo!(GLfloat) || val.convertsTo!(const GLfloat)) setFloat(name, val.get!(const GLfloat));
-		else if (val.convertsTo!(GLdouble) || val.convertsTo!(const GLdouble)) setFloat(name, val.get!(const GLdouble));
-		else if (val.convertsTo!(vec2) || val.convertsTo!(const vec2)) setVec2(name, val.get!(const vec2));
-		else if (val.convertsTo!(vec3) || val.convertsTo!(const vec3)) setVec3(name, val.get!(const vec3));
-		else if (val.convertsTo!(vec4) || val.convertsTo!(const vec4)) setVec4(name, val.get!(const vec4));
-		else if (val.convertsTo!(mat2) || val.convertsTo!(const mat2)) setMat2(name, val.get!(const mat2));
-		else if (val.convertsTo!(mat3) || val.convertsTo!(const mat3)) setMat3(name, val.get!(const mat3));
-		else if (val.convertsTo!(mat4) || val.convertsTo!(const mat4)) setMat4(name, val.get!(const mat4));
-		else assert(0, "Invalid type for uniform " ~ name ~ " of type " ~ val.type.toString() ~ "!");
-	}
-
 private:
-	void checkErr(string type, A...)(uint _id, A codes) {
-		int success = 0;
-		char[1024] infoLog;
-		static if (type != "Program") {
-			glGetShaderiv(_id, GL_COMPILE_STATUS, &success);
-			if (!success) {
-				glGetShaderInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
-				stderr.writeln("[ ERR ] ", type, " Shader failed to compile: ", infoLog);
-				stderr.writeln("  Shader code looks like this:");
-				auto l = 0;
-				foreach (c; codes) {
-					auto lines = c.split("\n");
-					foreach (line; lines)
-						stderr.writefln("%d %s", l++, line);
-					stderr.writeln("----------------");
-				}
+	int _id;
+}
+
+/// Sets `shader` as current.
+void use(in Shader shader)  {
+	glUseProgram(shader.id);
+}
+
+/// Sets a uniform to `val`.
+void setInt(in Shader shader, in string name, inout GLint val) {
+	glUniform1i(glGetUniformLocation(shader.id, cast(const(char*))name), val);
+}
+
+void setUint(in Shader shader, in string name, inout GLuint val) {
+	glUniform1ui(glGetUniformLocation(shader.id, cast(const(char*))name), val);
+}
+
+void setFloat(in Shader shader, in string name, inout GLfloat val) {
+	glUniform1f(glGetUniformLocation(shader.id, cast(const(char*))name), val);
+}
+
+void setVec2(in Shader shader, in string name, inout vec2 val) {
+	glUniform2fv(glGetUniformLocation(shader.id, cast(const(char*))name), 1, val.value_ptr);
+}
+
+void setVec2(in Shader shader, in string name, inout GLfloat val1, inout GLfloat val2) {
+	glUniform2f(glGetUniformLocation(shader.id, cast(const(char*))name), val1, val2);
+}
+
+void setVec3(in Shader shader, in string name, inout vec3 val) {
+	glUniform3fv(glGetUniformLocation(shader.id, cast(const(char*))name), 1, val.value_ptr);
+}
+
+void setVec3(in Shader shader, in string name, inout GLfloat val1, inout GLfloat val2, inout GLfloat val3) {
+	glUniform3f(glGetUniformLocation(shader.id, cast(const(char*))name), val1, val2, val3);
+}
+
+void setVec4(in Shader shader, in string name, inout vec4 val) {
+	glUniform4fv(glGetUniformLocation(shader.id, cast(const(char*))name), 1, val.value_ptr);
+}
+
+void setVec3(in Shader shader, in string name, inout GLfloat val1,
+		inout GLfloat val2, inout GLfloat val3, inout GLfloat val4)
+{
+	glUniform4f(glGetUniformLocation(shader.id, cast(const(char*))name), val1, val2, val3, val4);
+}
+
+void setMat2(in Shader shader, in string name, inout mat2 val) {
+	glUniformMatrix2fv(glGetUniformLocation(shader.id, cast(const(char*))name), 1, GL_TRUE, val.value_ptr);
+}
+
+void setMat3(in Shader shader, in string name, inout mat3 val) {
+	glUniformMatrix3fv(glGetUniformLocation(shader.id, cast(const(char*))name), 1, GL_TRUE, val.value_ptr);
+}
+
+void setMat4(in Shader shader, in string name, inout mat4 val) {
+	glUniformMatrix4fv(glGetUniformLocation(shader.id, cast(const(char*))name), 1, GL_TRUE, val.value_ptr);
+}
+
+void setUni(in Shader shader, in string name, inout Uniform val) {
+	if (val.convertsTo!(GLint) || val.convertsTo!(const GLint))
+		setInt(shader, name, val.get!(const GLint));
+	else if (val.convertsTo!(GLfloat) || val.convertsTo!(const GLfloat))
+		setFloat(shader, name, val.get!(const GLfloat));
+	else if (val.convertsTo!(GLdouble) || val.convertsTo!(const GLdouble))
+		setFloat(shader, name, val.get!(const GLdouble));
+	else if (val.convertsTo!(vec2) || val.convertsTo!(const vec2))
+		setVec2(shader, name, val.get!(const vec2));
+	else if (val.convertsTo!(vec3) || val.convertsTo!(const vec3))
+		setVec3(shader, name, val.get!(const vec3));
+	else if (val.convertsTo!(vec4) || val.convertsTo!(const vec4))
+		setVec4(shader, name, val.get!(const vec4));
+	else if (val.convertsTo!(mat2) || val.convertsTo!(const mat2))
+		setMat2(shader, name, val.get!(const mat2));
+	else if (val.convertsTo!(mat3) || val.convertsTo!(const mat3))
+		setMat3(shader, name, val.get!(const mat3));
+	else if (val.convertsTo!(mat4) || val.convertsTo!(const mat4))
+		setMat4(shader, name, val.get!(const mat4));
+	else assert(0, "Invalid type for uniform " ~ name ~ " of type " ~ val.type.toString() ~ "!");
+}
+
+void setMaterialUniforms(in Shader shader, in Material material) {
+	shader.setVec3("material.diffuse", material.diffuse);
+	shader.setVec3("material.specular", material.specular);
+	shader.setFloat("material.shininess", material.shininess);
+}
+
+private void checkErr(string type, A...)(uint _id, A codes) {
+	int success = 0;
+	char[1024] infoLog;
+	static if (type != "Program") {
+		glGetShaderiv(_id, GL_COMPILE_STATUS, &success);
+		if (!success) {
+			glGetShaderInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
+			stderr.writeln("[ ERR ] ", type, " Shader failed to compile: ", infoLog);
+			stderr.writeln("  Shader code looks like this:");
+			auto l = 0;
+			foreach (c; codes) {
+				auto lines = c.split("\n");
+				foreach (line; lines)
+					stderr.writefln("%d %s", l++, line);
+				stderr.writeln("----------------");
 			}
-		} else {
-			glGetProgramiv(_id, GL_LINK_STATUS, &success);
-			if (!success) {
-				glGetProgramInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
-				stderr.writeln("[ ERR ] Shader failed to link: ", infoLog);
-				stderr.writeln("  Shader code looks like this:");
-				auto l = 0;
-				foreach (c; codes) {
-					auto lines = c.split("\n");
-					foreach (line; lines)
-						stderr.writefln("%d %s", l++, line);
-					stderr.writeln("----------------");
-				}
+		}
+	} else {
+		glGetProgramiv(_id, GL_LINK_STATUS, &success);
+		if (!success) {
+			glGetProgramInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
+			stderr.writeln("[ ERR ] Shader failed to link: ", infoLog);
+			stderr.writeln("  Shader code looks like this:");
+			auto l = 0;
+			foreach (c; codes) {
+				auto lines = c.split("\n");
+				foreach (line; lines)
+					stderr.writefln("%d %s", l++, line);
+				stderr.writeln("----------------");
 			}
 		}
 	}
-
-	int _id;
 }

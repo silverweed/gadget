@@ -3,7 +3,6 @@ module gadget.rendering.batch;
 debug import std.stdio;
 import std.string;
 import gadget.rendering.shader;
-import gadget.rendering.interfaces;
 import gadget.rendering.camera;
 import gadget.rendering.mesh;
 import gadget.rendering.renderstate;
@@ -14,7 +13,6 @@ import gl3n.linalg;
 
 /// A Batch draws n instances of the same shape
 class Batch : Mesh {
-
 	GLuint nInstances = 1;
 
 	this(GLuint vao, GLuint count, Shader shader, bool isIndexed = false) {
@@ -25,7 +23,6 @@ class Batch : Mesh {
 						(cast(Batch)shape).nInstances);
 			};
 	}
-
 
 protected:
 	override void setDefaultUniforms(Camera camera) const {

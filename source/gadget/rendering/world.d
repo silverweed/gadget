@@ -5,7 +5,6 @@ import std.string;
 import std.algorithm;
 import derelict.sfml2.window;
 import derelict.opengl;
-import gadget.rendering.interfaces;
 import gadget.rendering.material;
 import gadget.rendering.camera;
 import gadget.rendering.shader;

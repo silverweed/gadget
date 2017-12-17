@@ -14,9 +14,9 @@ class Camera {
 		updateVecs();
 	}
 
-	@property vec3 up() const { return _up; }
-	@property vec3 front() const { return _front; }
-	@property vec3 right() const { return _right; }
+	@property vec3 up() pure const { return _up; }
+	@property vec3 front() pure const { return _front; }
+	@property vec3 right() pure const { return _right; }
 	
 	vec3 worldUp = vec3(0, 1, 0);
 	vec3 position;
@@ -46,11 +46,11 @@ class Camera {
 	}
 }
 
-mat4 viewMatrix(const Camera camera) {
+mat4 viewMatrix(const Camera camera) pure {
 	return mat4.look_at(camera.position, camera.position + camera.front, camera.up);
 }
 
-mat4 projMatrix(const Camera camera) {
+mat4 projMatrix(const Camera camera) pure {
 	return mat4.perspective(camera.width, camera.height, camera.fov, camera.near, camera.far);
 }
 

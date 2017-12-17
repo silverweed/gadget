@@ -8,7 +8,6 @@ import derelict.sfml2.window;
 import gadget.rendering.shader;
 import gadget.rendering.gl;
 import gadget.rendering.renderstate;
-import gadget.rendering.interfaces;
 import gadget.rendering.utils;
 import gadget.rendering.camera;
 import gadget.rendering.material;
@@ -19,7 +18,7 @@ struct Transform {
 	vec3 scale    = vec3(1, 1, 1);
 }
 
-class Mesh : ShaderDrawable {
+class Mesh {
 	Transform transform;
 	Material material;
 	Uniform[string] uniforms;
@@ -47,7 +46,7 @@ class Mesh : ShaderDrawable {
 			};
 	}
 
-	override void draw(sfWindow *window, Camera camera) const {
+	void draw(sfWindow *window, Camera camera) const {
 		glBindVertexArray(vao);
 		shader.use();
 		setDefaultUniforms(camera);
@@ -66,16 +65,13 @@ class Mesh : ShaderDrawable {
 		glBindVertexArray(0);
 	}
 
-	override Shader getShader() { return shader; }
-
 protected:
 	void setDefaultUniforms(Camera camera) const {
-		shader.setVec3("material.diffuse", material.diffuse);
-		shader.setFloat("material.shininess", material.shininess);
 		const model = mat4.identity
 				.scale(transform.scale.x, transform.scale.y, transform.scale.z)
 				.rotate(transform.rotation.alpha, transform.rotation.axis)
 				.translate(transform.position);
+		shader.setMaterialUniforms(material);
 		shader.setMat4("model", model);
 		shader.setVec3("viewPos", camera.position);
 		shader.setMat4("mvp", camera.projMatrix * camera.viewMatrix * model);
