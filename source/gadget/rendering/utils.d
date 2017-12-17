@@ -16,3 +16,6 @@ auto axis(in quat q) pure {
 	return vec3(q.x / d, q.y / d, q.z / d);
 }
 
+quat to_quat(float yaw, float pitch, float roll) {
+	return quat.euler_rotation(yaw, pitch, roll).normalized();
+}

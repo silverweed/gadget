@@ -12,62 +12,32 @@ import gadget.rendering.shader;
 import gadget.rendering.renderstate;
 import gadget.rendering.mesh;
 
-class World : Drawable {
+class World {
+	/// Objects
+	Mesh[] objects;
 
+	/// Lights
 	DirLight dirLight;
 	AmbientLight ambientLight;
-
-	this() {}
-
-	void addObject(Mesh object) {
-		objects ~= object;
-	}
-
-	void removeObject(Mesh object) {
-		auto idx = objects.countUntil(object);
-		if (idx >= 0)
-			objects = objects.remove(idx);
-	}
-
-	void addPointLight(in PointLight light) {
-		if (pointLights.length > MAX_POINT_LIGHTS) {
-			stderr.writefln("Warning: tried to add more lights than the maximum allowed (%d)", MAX_POINT_LIGHTS);
-			return;
-		}
-		pointLights ~= light;
-	}
-	
-	ref PointLight getPointLight(uint i)
-	in {
-		assert(i < pointLights.length);
-	} do {
-		return pointLights[i];
-	}
-
-	void draw(sfWindow* window, Camera camera) {
-		foreach (obj; objects) {
-			setUniforms(obj);
-			obj.draw(window, camera);
-		}
-	}
-
-private:
-	void setUniforms(Mesh obj) const {
-		obj.uniforms["ambientLight.color"] = ambientLight.color;
-		obj.uniforms["ambientLight.strength"] = ambientLight.strength;
-		obj.uniforms["dirLight.direction"] = dirLight.direction;
-		obj.uniforms["dirLight.diffuse"] = dirLight.diffuse;
-		obj.uniforms["nPointLights"] = cast(GLuint)pointLights.length;
-		//obj.uniforms["pointLight.position"] = pointLights[0].position;
-		//obj.uniforms["pointLight.diffuse"] = pointLights[0].diffuse;
-		//obj.uniforms["pointLight.attenuation"] = cast(GLfloat)pointLights[0].attenuation;
-		foreach (i, pl; pointLights) {
-			obj.uniforms["pointLight[%d].position".format(i)] = pl.position;
-			obj.uniforms["pointLight[%d].diffuse".format(i)] = pl.diffuse;
-			obj.uniforms["pointLight[%d].attenuation".format(i)] = pl.attenuation;
-		}
-	}
-
-	Mesh[] objects;
 	PointLight[] pointLights;
+}
+
+void draw(World world, sfWindow* window, Camera camera) {
+	foreach (obj; world.objects) {
+		world.setUniforms(obj);
+		obj.draw(window, camera);
+	}
+}
+
+private void setUniforms(World world, Mesh obj) {
+	obj.uniforms["ambientLight.color"] = world.ambientLight.color;
+	obj.uniforms["ambientLight.strength"] = world.ambientLight.strength;
+	obj.uniforms["dirLight.direction"] = world.dirLight.direction;
+	obj.uniforms["dirLight.diffuse"] = world.dirLight.diffuse;
+	obj.uniforms["nPointLights"] = cast(GLuint)world.pointLights.length;
+	foreach (i, pl; world.pointLights) {
+		obj.uniforms["pointLight[%d].position".format(i)] = pl.position;
+		obj.uniforms["pointLight[%d].diffuse".format(i)] = pl.diffuse;
+		obj.uniforms["pointLight[%d].attenuation".format(i)] = pl.attenuation;
+	}
 }

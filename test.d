@@ -37,9 +37,11 @@ void main(string[] args) {
 
 	Mesh[] points;
 	auto cubes = createCubes(nCubes);
-	world.addObject(cubes);
-	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0))
-			.setPos(0, -2, 0).setScale(100, 100, 100).setRot(PI/2, 0, 0);
+	world.objects ~= cubes;
+	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0));
+	ground.transform.position = vec3(0, -2, 0);
+	ground.transform.scale = vec3(100, 100, 100);
+	ground.transform.rotation = to_quat(PI/2, 0, 0);
 	world.ambientLight = AmbientLight(
 		vec3(1, 1, 1), // color
 		0.05,           // strength
@@ -50,17 +52,18 @@ void main(string[] args) {
 	);
 	for (int i = 0; i < nLights; ++i) {
 		auto color = vec3(uniform01(), uniform01(), uniform01());
-		world.addPointLight(PointLight(
+		world.pointLights ~= PointLight(
 			vec3(0, 0, 0), // position
 			color,
 			0.03,          // attenuation
-		));
-		auto point = new Mesh(genPoint(), 1, presetShaders["billboardQuad"]).setColor(
-				color.r, color.g, color.b).setPrimitive(GL_POINTS);
+		);
+		auto point = new Mesh(genPoint(), 1, presetShaders["billboardQuad"]);
+		point.material.diffuse = vec3(color.r, color.g, color.b);
+		point.primitive = GL_POINTS;
 		points ~= point;
-		world.addObject(point);
+		world.objects ~= point;
 	}
-	world.addObject(ground);
+	world.objects ~= ground;
 
 	RenderState.global.clearColor = vec4(0.01, 0.0, 0.09, 1.0);
 
@@ -86,9 +89,9 @@ void main(string[] args) {
 			points[i].uniforms["radius"] = 0.8;
 			points[i].uniforms["scrWidth"] = RenderState.global.screenSize.x;
 			points[i].uniforms["scrHeight"] = RenderState.global.screenSize.y;
-			points[i].setPos(lightPos);
+			points[i].transform.position = lightPos;
 
-			world.getPointLight(i).position = lightPos;
+			world.pointLights[i].position = lightPos;
 		}
 
 		world.draw(window, camera);

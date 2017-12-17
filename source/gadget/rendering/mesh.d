@@ -38,12 +38,12 @@ class Mesh : ShaderDrawable {
 		material.specular = vec3(1, 1, 1);
 		material.shininess = 0.5;
 		if (isIndexed)
-			drawFunc = (const(Mesh) shape) {
+			drawFunc = (in Mesh shape) {
 				glDrawElements(shape.primitive, shape.vertexCount, GL_UNSIGNED_INT, cast(void*)0);
 			};
 		else
-			drawFunc = (const(Mesh) shape) {
-				glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount, 300);
+			drawFunc = (in Mesh shape) {
+				glDrawArrays(shape.primitive, 0, shape.vertexCount);
 			};
 	}
 
@@ -64,36 +64,6 @@ class Mesh : ShaderDrawable {
 		cull(wasCullEnabled);
 
 		glBindVertexArray(0);
-	}
-
-	Mesh setPos(float x, float y, float z) {
-		transform.position = vec3(x, y, z);
-		return this;
-	}
-
-	Mesh setPos(in vec3 pos) {
-		transform.position = pos;
-		return this;
-	}
-
-	Mesh setRot(float yaw, float pitch, float roll) {
-		transform.rotation = quat.euler_rotation(yaw, pitch, roll).normalized();
-		return this;
-	}
-	
-	Mesh setScale(float sx, float sy, float sz) {
-		transform.scale = vec3(sx, sy, sz);
-		return this;
-	}
-
-	Mesh setColor(float r, float g, float b) {
-		material.diffuse = vec3(r, g, b);
-		return this;
-	}
-
-	Mesh setPrimitive(GLenum primitive) {
-		this.primitive = primitive;
-		return this;
 	}
 
 	override Shader getShader() { return shader; }
