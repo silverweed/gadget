@@ -10,4 +10,6 @@ public import gadget.rendering.gl,
               gadget.rendering.material,
               gadget.rendering.utils,
               gadget.rendering.world,
+              gadget.rendering.shadows,
+              gadget.rendering.rendertexture,
               gadget.rendering.batch;

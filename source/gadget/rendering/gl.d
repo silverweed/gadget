@@ -70,9 +70,6 @@ void renderLoop(IF, RF)(sfWindow* window, Camera camera,
 		}
 		inputProcessFunc(window, camera, state);
 
-		glClearColor(state.clearColor.x, state.clearColor.y, state.clearColor.z, state.clearColor.a);
-		glClear(state.clearFlags);
-
 		renderFunc(window, camera, state);
 		debug (2) writeln("Time = \n\tdraw:    ", sw.peek());
 

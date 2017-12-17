@@ -9,6 +9,7 @@ import std.math;
 import gadget.rendering.shapes;
 import gadget.rendering.shader;
 import gadget.rendering.mesh;
+import gadget.rendering.shadows;
 import gadget.rendering.defaultShaders;
 import derelict.sfml2;
 import derelict.opengl;
@@ -20,9 +21,21 @@ private class PresetShaderCache {
 		if (name in cache) return cache[name];
 		Shader shader;
 		switch (name) {
-		case "default": shader = new Shader(vs_posNormTex, fs_blinnPhong, null, name); break;
-		case "defaultInstanced": shader = new Shader(vs_posNormTexInstanced, fs_blinnPhongInstanced, null, name); break;
-		case "billboardQuad": shader = new Shader(vs_billboardQuad, fs_billboardQuad, gs_billboardQuad, name); break;
+		case "default":
+			shader = new Shader(vs_posNormTex, fs_blinnPhong, null, name);
+			break;
+		case "defaultInstanced":
+			shader = new Shader(vs_posNormTexInstanced, fs_blinnPhongInstanced, null, name);
+			break;
+		case "billboardQuad":
+			shader = new Shader(vs_billboardQuad, fs_billboardQuad, gs_billboardQuad, name);
+			break;
+		case "simpleDepth":
+			shader = new Shader(vs_simpleDepth, fs_simpleDepth, null, name);
+			break;
+		case "screenQuad":
+			shader = new Shader(vs_screenQuad, fs_screenQuad, null, name);
+			break;
 		default: assert(0, "Invalid preset shader: " ~ name);
 		}
 		return cache[name] = shader;

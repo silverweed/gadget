@@ -14,15 +14,15 @@ import derelict.opengl;
 import gl3n.linalg;
 import derelict.opengl;
 
-enum WIDTH = 800;
-enum HEIGHT = 600;
+enum WIDTH = 1920;
+enum HEIGHT = 1080;
 
 float deltaTime = 0;
 float lastFrame = 0;
 
 void main(string[] args) {
 
-	auto nCubes = 1000;
+	auto nCubes = 1;
 	if (args.length > 1)
 		nCubes = args[1].to!uint;
 
@@ -30,7 +30,7 @@ void main(string[] args) {
 	initRender();
 	auto window = newWindow(WIDTH, HEIGHT);
 
-	enum nLights = 10;
+	enum nLights = 1;
 
 	auto camera = new Camera();
 	auto world = new World();
@@ -72,6 +72,13 @@ void main(string[] args) {
 	auto clock = sfClock_create();
 	auto fps = new FPSCounter(2f);
 	debug writeln("starting render loop");
+
+	auto screenQuadShader = presetShaders["screenQuad"];
+	screenQuadShader.use();
+	screenQuadShader.setInt("screenTex", 0);
+	auto renderTex = genRenderTexture(WIDTH, HEIGHT);
+	auto depthMap = genDepthMap(1024, 1024);
+
 	renderLoop(window, camera, &processInput, (sfWindow *window, Camera camera, RenderState state) {
 		// Update time
 		auto t = sfTime_asSeconds(sfClock_getElapsedTime(clock));
@@ -80,21 +87,24 @@ void main(string[] args) {
 
 		//world.dirLight.direction = vec3(1, sin(t), 1);
 
-		for (int i = 0; i < points.length; ++i) {
-			auto lightPos = vec3(5 * i * sin(t + i * 0.7),
-					1f + 2f * i * sin(t / 5 + i * 0.7),
-					7 * i * cos(t + i * 0.7));
+		moveLights(world, points, t);
 
-			// Update light gizmo
-			points[i].uniforms["radius"] = 0.8;
-			points[i].uniforms["scrWidth"] = RenderState.global.screenSize.x;
-			points[i].uniforms["scrHeight"] = RenderState.global.screenSize.y;
-			points[i].transform.position = lightPos;
-
-			world.pointLights[i].position = lightPos;
-		}
-
+		// First pass: render scene to render target
+		glBindFramebuffer(GL_FRAMEBUFFER, renderTex.fbo);
+		const clCol = RenderState.global.clearColor;
+		glClearColor(clCol.r, clCol.g, clCol.b, clCol.a);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
 		world.draw(camera);
+
+		// Second pass: draw render target to screen
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClearColor(1, 1, 1, 1);
+		glClear(GL_COLOR_BUFFER_BIT);
+		screenQuadShader.use();
+		glDisable(GL_DEPTH_TEST);
+		glBindTexture(GL_TEXTURE_2D, renderTex.colorBuf);
+		drawArrays(renderTex.quadVao, quadVertices.length);
 
 		updateMouse(window, camera);
 		fps.update(deltaTime);
@@ -152,7 +162,6 @@ void updateMouse(sfWindow *window, Camera camera) {
 
 auto createCubes(uint n) {
 	auto cubes = new Batch(genCube(), cubeVertices.length, presetShaders["defaultInstanced"]);
-	GLuint iVbo;
 	auto cubeModels = new mat4[n];
 	auto cubeDiffuse = new vec3[cubeModels.length];
 	auto cubeSpecular = new vec3[cubeModels.length];
@@ -171,10 +180,28 @@ auto createCubes(uint n) {
 		cubeSpecular[i] = vec3(uniform01(), uniform01(), uniform01());
 		cubeShininess[i] = uniform(0, 10);
 	}
+	// Put first cube in origin, for convenience
+	cubeModels[0] = mat4.identity;
 	cubes.nInstances = cast(uint)cubeModels.length;
 	cubes.setData("aInstanceModel", cubeModels);
 	cubes.setData("aDiffuse", cubeDiffuse);
 	cubes.setData("aSpecular", cubeSpecular);
 	cubes.setData("aShininess", cubeShininess);
 	return cubes;
+}
+
+void moveLights(World world, Mesh[] points, float t) {
+	for (int i = 0; i < points.length; ++i) {
+		auto lightPos = vec3(5 * (i+1) * sin(t + i * 0.7),
+				1f + 2f * (i+1) * sin(t / 5 + i * 0.7),
+				7 * (i+1) * cos(t + i * 0.7));
+
+		// Update light gizmo
+		points[i].uniforms["radius"] = 0.8;
+		points[i].uniforms["scrWidth"] = RenderState.global.screenSize.x;
+		points[i].uniforms["scrHeight"] = RenderState.global.screenSize.y;
+		points[i].transform.position = lightPos;
+
+		world.pointLights[i].position = lightPos;
+	}
 }

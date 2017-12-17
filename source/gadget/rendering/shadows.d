@@ -3,6 +3,8 @@ module gadget.rendering.shadows;
 import derelict.opengl;
 import gadget.rendering.world;
 import gadget.rendering.utils;
+import gadget.rendering.camera;
+import gadget.rendering.presets;
 import gadget.rendering.material;
 
 struct DepthMap {
@@ -11,6 +13,28 @@ struct DepthMap {
 	uint height;
 	uint texture;
 }
+
+enum vs_simpleDepth = q{
+	#version 330 core
+
+	layout (location = 0) in vec3 aPos;
+	layout (location = 1) in mat4 aInstanceModel;
+	// (location = 2) aInstanceModel
+	// (location = 3) aInstanceModel
+	// (location = 4) aInstanceModel
+
+	uniform mat4 lightVP;
+
+	void main() {
+		gl_Position = lightVP * aInstanceModel * vec4(aPos, 1.0);
+	}
+};
+
+enum fs_simpleDepth = q{
+	#version 330 core
+
+	void main() {}
+};
 
 auto genDepthMap(uint width, uint height) {
 	// Create the framebuffer
@@ -40,10 +64,11 @@ auto genDepthMap(uint width, uint height) {
 	return DepthMap(depthMapFbo, width, height, depthMapTex);
 }
 
-void renderToDepthMap(World world, DepthMap depthMap) {
+void renderToDepthMap(World world, Camera camera, DepthMap depthMap) {
 	glViewport(0, 0, depthMap.width, depthMap.height);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMap.fbo);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	// Render scene
+	world.draw(camera, presetShaders["simpleDepth"]);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

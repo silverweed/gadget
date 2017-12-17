@@ -283,3 +283,29 @@ enum fs_billboardQuad = MATERIAL_HEADER ~ q{
 		fragColor = vec4(material.diffuse, 1.0);
 	}
 };
+
+enum vs_screenQuad = MATERIAL_HEADER ~ q{
+	
+	layout (location = 0) in vec2 aPos;
+	layout (location = 1) in vec2 aTexCoords;
+
+	out vec2 texCoords;
+
+	void main() {
+		gl_Position = vec4(aPos.xy, 0.0, 1.0);
+		texCoords = aTexCoords;
+	}
+};
+
+enum fs_screenQuad = MATERIAL_HEADER ~ q{
+	
+	out vec4 fragColor;
+
+	in vec2 texCoords;
+
+	uniform sampler2D screenTex;
+
+	void main() {
+		fragColor = texture(screenTex, texCoords);
+	}
+};

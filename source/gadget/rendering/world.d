@@ -21,10 +21,13 @@ class World {
 	PointLight[] pointLights;
 }
 
-void draw(World world, Camera camera) {
+void draw(World world, Camera camera, Shader shader = null) {
 	foreach (obj; world.objects) {
 		world.setUniforms(obj);
-		obj.draw(camera);
+		if (shader !is null)
+			obj.draw(camera, shader);
+		else
+			obj.draw(camera);
 	}
 }
 

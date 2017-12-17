@@ -46,7 +46,8 @@ class Mesh {
 			};
 	}
 
-	void draw(Camera camera) const {
+	void draw(Camera camera, Shader overrideShader = null) const {
+		auto shader = (overrideShader is null) ? this.shader : overrideShader;
 		glBindVertexArray(vao);
 		shader.use();
 		setDefaultUniforms(camera);
