@@ -86,7 +86,7 @@ private:
 }
 
 /// Sets `shader` as current.
-void use(in Shader shader)  {
+void use(in Shader shader) {
 	glUseProgram(shader.id);
 }
 

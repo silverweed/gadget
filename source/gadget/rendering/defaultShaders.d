@@ -309,3 +309,17 @@ enum fs_screenQuad = MATERIAL_HEADER ~ q{
 		fragColor = texture(screenTex, texCoords);
 	}
 };
+
+enum fs_viewDepth = MATERIAL_HEADER ~ q{
+	
+	out vec4 fragColor;
+
+	in vec2 texCoords;
+
+	uniform sampler2D depthMap;
+
+	void main() {
+		float depthVal = texture(depthMap, texCoords).r;
+		fragColor = vec4(vec3(depthVal), 1.0);
+	}
+};

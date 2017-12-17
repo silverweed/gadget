@@ -16,6 +16,8 @@ import derelict.opengl;
 
 enum WIDTH = 1920;
 enum HEIGHT = 1080;
+enum SHAD_WIDTH = 2048;
+enum SHAD_HEIGHT = 2048;
 
 float deltaTime = 0;
 float lastFrame = 0;
@@ -73,11 +75,13 @@ void main(string[] args) {
 	auto fps = new FPSCounter(2f);
 	debug writeln("starting render loop");
 
-	auto screenQuadShader = presetShaders["screenQuad"];
-	screenQuadShader.use();
-	screenQuadShader.setInt("screenTex", 0);
 	auto renderTex = genRenderTexture(WIDTH, HEIGHT);
-	auto depthMap = genDepthMap(1024, 1024);
+	auto depthMap = genDepthMap(SHAD_WIDTH, SHAD_HEIGHT);
+	//auto screenQuadShader = presetShaders["screenQuad"];
+	auto screenQuadShader = new Shader(vs_screenQuad, fs_viewDepth);
+	screenQuadShader.use();
+	//screenQuadShader.setInt("screenTex", 0);
+	screenQuadShader.setInt("depthMap", 0);
 
 	renderLoop(window, camera, &processInput, (sfWindow *window, Camera camera, RenderState state) {
 		// Update time
@@ -95,15 +99,19 @@ void main(string[] args) {
 		glClearColor(clCol.r, clCol.g, clCol.b, clCol.a);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
-		world.draw(camera);
+		//world.draw(camera);
+		world.renderToDepthMap(camera, depthMap);
 
+		glViewport(0, 0, RenderState.global.screenSize.x, RenderState.global.screenSize.y);
 		// Second pass: draw render target to screen
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1, 1, 1, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 		screenQuadShader.use();
 		glDisable(GL_DEPTH_TEST);
-		glBindTexture(GL_TEXTURE_2D, renderTex.colorBuf);
+		glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, renderTex.colorBuf);
+		glBindTexture(GL_TEXTURE_2D, depthMap.texture);
 		drawArrays(renderTex.quadVao, quadVertices.length);
 
 		updateMouse(window, camera);
