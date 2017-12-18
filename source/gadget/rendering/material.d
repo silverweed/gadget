@@ -1,5 +1,6 @@
 module gadget.rendering.material;
 
+import std.conv: to;
 import gl3n.linalg;
 
 enum GenMaterial = q{
@@ -39,3 +40,13 @@ mixin(GenAmbientLight);
 
 /// Maximum number of point lights supported in default shaders
 enum MAX_POINT_LIGHTS = 10;
+
+enum MATERIAL_HEADER = `
+#version 330 core
+
+#define MAX_POINT_LIGHTS ` ~to!string(MAX_POINT_LIGHTS) ~ `
+
+` ~ GenMaterial ~ `
+` ~ GenPointLight ~ `
+` ~ GenDirLight ~ `
+` ~ GenAmbientLight;

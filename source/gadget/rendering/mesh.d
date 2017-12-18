@@ -89,4 +89,5 @@ package void setDefaultUniforms(in Mesh mesh, in Camera camera, in Shader shader
 	const vp = camera.projMatrix * camera.viewMatrix;
 	shader.setMat4("vp", vp);
 	shader.setMat4("mvp", vp * model);
+	shader.setInt("depthMap", 0);
 }

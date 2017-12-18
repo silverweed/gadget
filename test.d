@@ -24,7 +24,7 @@ float lastFrame = 0;
 
 void main(string[] args) {
 
-	auto nCubes = 2;
+	auto nCubes = 3;
 	if (args.length > 1)
 		nCubes = args[1].to!uint;
 
@@ -35,24 +35,24 @@ void main(string[] args) {
 	enum nLights = 1;
 
 	auto camera = new Camera();
+	camera.position.y = 2;
 	auto world = new World();
 
 	Mesh[] points;
 	auto cubes = createCubes(nCubes);
-	auto cube = new Mesh(genCube(), cubeVertices.length, presetShaders["default"]);
-	//world.objects ~= cube;
 	world.objects ~= cubes;
-	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0));
-	ground.transform.position = vec3(0, -2, 0);
-	ground.transform.scale = vec3(100, 100, 100);
-	ground.transform.rotation = to_quat(PI/2, 0, 0);
+	//auto cube = new Mesh(genCube(), cubeVertices.length, presetShaders["default"]);
+	//world.objects ~= cube;
+	//auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0));
+	auto ground = createGround();
+	world.objects ~= ground;
 	world.ambientLight = AmbientLight(
 		vec3(1, 1, 1), // color
-		0.05,           // strength
+		0.05,          // strength
 	);
 	world.dirLight = DirLight(
 		vec3(0.4, 0.4, 0.4), // direction
-		vec3(0.05, 0.05, 0.05), // diffuse
+		vec3(0.35, 0.35, 0.35), // diffuse
 	);
 	for (int i = 0; i < nLights; ++i) {
 		auto color = vec3(uniform01(), uniform01(), uniform01());
@@ -65,9 +65,8 @@ void main(string[] args) {
 		point.material.diffuse = vec3(color.r, color.g, color.b);
 		point.primitive = GL_POINTS;
 		points ~= point;
-		//world.objects ~= point;
+		world.objects ~= point;
 	}
-	//world.objects ~= ground;
 
 	RenderState.global.clearColor = vec4(0.01, 0.0, 0.09, 1.0);
 
@@ -79,15 +78,15 @@ void main(string[] args) {
 
 	auto renderTex = genRenderTexture(WIDTH, HEIGHT);
 	auto depthMap = genDepthMap(SHAD_WIDTH, SHAD_HEIGHT);
-	//auto screenQuadShader = presetShaders["screenQuad"];
-	auto screenQuadShader = new Shader(vs_screenQuad, fs_viewDepth);
-	screenQuadShader.use();
+	auto screenQuadShader = presetShaders["screenQuad"];
+	//auto screenQuadShader = new Shader(vs_screenQuad, fs_viewDepth);
+	//screenQuadShader.use();
 	//screenQuadShader.setInt("screenTex", 0);
-	screenQuadShader.setInt("depthMap", 0);
+	//screenQuadShader.setInt("depthMap", 0);
 
 	renderLoop(window, camera, &processInput, (sfWindow *window, Camera camera, RenderState state) {
 		// Update time
-		auto t = sfTime_asSeconds(sfClock_getElapsedTime(clock));
+		const t = sfTime_asSeconds(sfClock_getElapsedTime(clock));
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
@@ -95,26 +94,31 @@ void main(string[] args) {
 
 		moveLights(world, points, t);
 
-		// First pass: render scene to render target
-		//glBindFramebuffer(GL_FRAMEBUFFER, renderTex.fbo);
-		const clCol = RenderState.global.clearColor;
-		glClearColor(clCol.r, clCol.g, clCol.b, clCol.a);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-		//world.drawWorld(camera);
+		// First pass: render scene to depth map
 		world.renderToDepthMap(camera, depthMap);
 
+		// Second pass: render scene to quad using generated depth map
+		//glBindFramebuffer(GL_FRAMEBUFFER, renderTex.fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, RenderState.global.screenSize.x, RenderState.global.screenSize.y);
-		// Second pass: draw render target to screen
-		glClearColor(1, 1, 1, 1);
+		const clCol = RenderState.global.clearColor;
+		glClearColor(clCol.r, clCol.g, clCol.b, clCol.a);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		screenQuadShader.use();
-		glDisable(GL_DEPTH_TEST);
+		glEnable(GL_DEPTH_TEST);
 		glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, renderTex.colorBuf);
 		glBindTexture(GL_TEXTURE_2D, depthMap.texture);
-		drawArrays(renderTex.quadVao, quadVertices.length);
+		world.drawWorld(camera);
+
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		//glViewport(0, 0, RenderState.global.screenSize.x, RenderState.global.screenSize.y);
+		//// Third pass: draw render target to screen
+		//glClearColor(1, 1, 1, 1);
+		//glClear(GL_COLOR_BUFFER_BIT);
+		//screenQuadShader.use();
+		//glDisable(GL_DEPTH_TEST);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, renderTex.colorBuf);
+		////glBindTexture(GL_TEXTURE_2D, depthMap.texture);
+		//drawArrays(renderTex.quadVao, quadVertices.length);
 
 		updateMouse(window, camera);
 		fps.update(deltaTime);
@@ -172,6 +176,7 @@ void updateMouse(sfWindow *window, Camera camera) {
 
 auto createCubes(uint n) {
 	auto cubes = new Batch(genCube(), cubeVertices.length, presetShaders["defaultInstanced"]);
+	cubes.cullFace = true;
 	auto cubeModels = new mat4[n];
 	auto cubeDiffuse = new vec3[cubeModels.length];
 	auto cubeSpecular = new vec3[cubeModels.length];
@@ -192,7 +197,8 @@ auto createCubes(uint n) {
 	}
 	// Put first cube in origin, for convenience
 	cubeModels[0] = mat4.identity;
-	cubeModels[1] = mat4.identity.translate(2, 1, 0).transposed();
+	cubeModels[1] = mat4.identity.translate(0, 1, 0).rotate(0.0, vec3(0, 1, 0)).transposed();
+	cubeModels[2] = mat4.identity.translate(0, 0, 1).rotate(0.0, vec3(0, 1, 0)).transposed();
 	cubes.nInstances = cast(uint)cubeModels.length;
 	cubes.setData("aInstanceModel", cubeModels);
 	cubes.setData("aDiffuse", cubeDiffuse);
@@ -204,9 +210,8 @@ auto createCubes(uint n) {
 void moveLights(World world, Mesh[] points, float t) {
 	for (int i = 0; i < points.length; ++i) {
 		auto lightPos = vec3(5 * (i+1) * sin(t + i * 0.7),
-				1f + 2f * (i+1) * sin(t / 5 + i * 0.7),
+				3f + 2f * (i+1) * sin(t / 5 + i * 0.7),
 				7 * (i+1) * cos(t + i * 0.7));
-
 		// Update light gizmo
 		points[i].uniforms["radius"] = 0.8;
 		points[i].uniforms["scrWidth"] = RenderState.global.screenSize.x;
@@ -215,4 +220,17 @@ void moveLights(World world, Mesh[] points, float t) {
 
 		world.pointLights[i].position = lightPos;
 	}
+}
+
+auto createGround() {
+	auto ground = new Batch(genQuad(), quadVertices.length, presetShaders["defaultInstanced"]);
+	ground.cullFace = false;
+	ground.nInstances = 1;
+	ground.setData("aInstanceModel", [
+		mat4.identity.scale(100, 100, 100).rotate(PI / 2, vec3(1, 0, 0)).translate(0, -0.5, 0).transposed()
+	]);
+	ground.setData("aDiffuse", [ vec3(0.4, 0.2, 0) ]);
+	ground.setData("aSpecular", [ vec3(0.02, 0.01, 0) ]);
+	ground.setData("aShininess", [ 0.3 ]);
+	return ground;
 }

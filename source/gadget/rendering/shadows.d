@@ -17,10 +17,11 @@ struct DepthMap {
 	uint texture;
 }
 
-enum vs_simpleDepthInstanced = q{
-	#version 330 core
+enum vs_simpleDepthInstanced = MATERIAL_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
+	// (location = 1) aNormal;
+	// (location = 2) aTexCoords;
 	layout (location = 3) in mat4 aInstanceModel;
 	// (location = 4) aInstanceModel
 	// (location = 5) aInstanceModel
@@ -33,8 +34,7 @@ enum vs_simpleDepthInstanced = q{
 	}
 };
 
-enum fs_simpleDepth = q{
-	#version 330 core
+enum fs_simpleDepth = MATERIAL_HEADER ~ q{
 
 	void main() {}
 };
@@ -52,8 +52,8 @@ auto genDepthMap(uint width, uint height) {
 			GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 	// Attach the FB to the texture
 	mixin(DEFER_REBIND_CUR_FBO);
@@ -74,9 +74,8 @@ void renderToDepthMap(World world, Camera camera, DepthMap depthMap) {
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMap.fbo);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
-	auto lightPos = world.pointLights[0].position;
-	//const lightPos = vec3(-2, 4, -1);
-	auto lightProj = mat4.orthographic(-10f, 10f, -10f, 10f, 1, 17.5);
+	const lightPos = world.pointLights[0].position;
+	auto lightProj = mat4.orthographic(-10f, 10f, -10f, 10f, 1, 25.5);
 	//auto lightProj = mat4.perspective(-10f, 10f, -10f, 10f, camera.near, camera.far);
 	auto lightView = mat4.look_at(lightPos, vec3(0, 0, 0), vec3(0, 1, 0));
 	const depthShader = presetShaders["simpleDepth"];

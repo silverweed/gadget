@@ -3,16 +3,6 @@ module gadget.rendering.defaultShaders;
 import std.conv;
 import gadget.rendering.material;
 
-enum MATERIAL_HEADER = `
-#version 330 core
-
-#define MAX_POINT_LIGHTS ` ~to!string(MAX_POINT_LIGHTS) ~ `
-
-` ~ GenMaterial ~ `
-` ~ GenPointLight ~ `
-` ~ GenDirLight ~ `
-` ~ GenAmbientLight;
-
 enum f_addAmbientLight = q{
 	vec3 addAmbientLight(in AmbientLight light) {
 		return light.strength * light.color * material.diffuse;
@@ -116,6 +106,23 @@ enum fi_addDirLight = q{
 	}
 };
 
+enum f_calcShadow = q{
+	float calcShadow(vec4 lightSpaceFragPos) {
+		const float bias = 0.005;
+
+		// Perform perspective divide (maps coords to [-1, 1])
+		vec3 projCoords = lightSpaceFragPos.xyz / lightSpaceFragPos.w;
+		// Transform [-1, 1] -> [0, 1] to sample from the depth map
+		projCoords = projCoords * 0.5 + 0.5;
+		// Find closest depth by sampling a texel from the depth map
+		float closestDepth = texture(depthMap, projCoords.xy).r;
+		float curDepth = projCoords.z;
+
+		// Compare depth of this fragment with the one sampled from the shadow map
+		return float(curDepth - bias > closestDepth);
+	}
+};
+
 //////////////////////////////////////////////
 
 enum vs_posNormTex = MATERIAL_HEADER ~ q{
@@ -155,12 +162,14 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 	layout (location = 9) in float aShininess;
 
 	uniform mat4 vp;
+	uniform mat4 lightVP;
 
 	out VS_OUT {
 		vec3 fragPos;
 		vec3 normal;
 		vec2 texCoord;
 		Material material;
+		vec4 lightSpaceFragPos;
 	} vs_out;
 
 	void main() {
@@ -170,6 +179,7 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 		vs_out.material.diffuse = aDiffuse;
 		vs_out.material.specular = aSpecular;
 		vs_out.material.shininess = aShininess;
+		vs_out.lightSpaceFragPos = lightVP * vec4(vs_out.fragPos, 1.0);
 		gl_Position = vp * aInstanceModel * vec4(aPos, 1.0);
 	}
 };
@@ -212,6 +222,7 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 		vec3 normal;
 		vec2 texCoord;
 		Material material;
+		vec4 lightSpaceFragPos;
 	} fs_in;
 
 	uniform vec3 viewPos;
@@ -220,14 +231,19 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 	uniform DirLight dirLight;
 	uniform AmbientLight ambientLight;
 
-} ~ fi_addAmbientLight ~ fi_addPointLight ~ fi_addDirLight ~ q{
+	uniform sampler2D depthMap;
+	//uniform sampler2D diffuseTex;
+
+} ~ fi_addAmbientLight ~ fi_addPointLight ~ fi_addDirLight ~ f_calcShadow ~ q{
 
 	void main() {
-		vec3 result = addAmbientLight(ambientLight);
-		//result += addPointLight(pointLight);
+		vec3 result = vec3(0.0);
 		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
 			result += addPointLight(pointLight[i]);
 		result += addDirLight(dirLight);
+
+		float shadow = calcShadow(fs_in.lightSpaceFragPos);
+		result = result * (1.0 - shadow) + addAmbientLight(ambientLight);
 
 		fragColor = vec4(result, 1.0);
 	}

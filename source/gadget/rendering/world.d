@@ -5,6 +5,7 @@ import std.string;
 import std.algorithm;
 import derelict.sfml2.window;
 import derelict.opengl;
+import gl3n.linalg;
 import gadget.rendering.material;
 import gadget.rendering.camera;
 import gadget.rendering.shader;
@@ -42,4 +43,10 @@ private void setUniforms(World world, Mesh obj) {
 		obj.uniforms["pointLight[%d].diffuse".format(i)] = pl.diffuse;
 		obj.uniforms["pointLight[%d].attenuation".format(i)] = pl.attenuation;
 	}
+	// Shadows (TODO)
+	const lightPos = world.pointLights[0].position;
+	//const lightPos = vec3(-4, 4, -1);
+	const lightProj = mat4.orthographic(-10f, 10f, -10f, 10f, 1, 17.5);
+	const lightView = mat4.look_at(lightPos, vec3(0, 0, 0), vec3(0, 1, 0));
+	obj.uniforms["lightVP"] = lightProj * lightView;
 }
