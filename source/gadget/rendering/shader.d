@@ -82,6 +82,10 @@ class Shader {
 		glDeleteShader(fsId);
 		if (gsId)
 			glDeleteShader(gsId);
+
+		fillDeclaredUniforms(vsCode);
+		fillDeclaredUniforms(fsCode);
+		if (gsCode !is null) fillDeclaredUniforms(gsCode);
 	}
 
 	void applyUniforms() {
@@ -227,10 +231,10 @@ void setUni(in Shader shader, in string name, inout Uniform val) {
 	else assert(0, "Invalid type for uniform " ~ name ~ " of type " ~ val.type.toString() ~ "!");
 }
 
-void setMaterialUniforms(in Shader shader, in Material material) {
-	shader.setVec3("material.diffuse", material.diffuse);
-	shader.setVec3("material.specular", material.specular);
-	shader.setFloat("material.shininess", material.shininess);
+void setMaterialUniforms(Shader shader, in Material material) {
+	shader.uniforms["material.diffuse"] = material.diffuse;
+	shader.uniforms["material.specular"] = material.specular;
+	shader.uniforms["material.shininess"] = material.shininess;
 }
 
 private void checkErr(string type, A...)(uint _id, A codes) {
