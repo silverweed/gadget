@@ -3,6 +3,7 @@ module gadget.rendering.shadows;
 import derelict.opengl;
 import gl3n.linalg;
 import gadget.rendering.world;
+import gadget.rendering.gl;
 import gadget.rendering.utils;
 import gadget.rendering.camera;
 import gadget.rendering.shader;
@@ -16,14 +17,14 @@ struct DepthMap {
 	uint texture;
 }
 
-enum vs_simpleDepth = q{
+enum vs_simpleDepthInstanced = q{
 	#version 330 core
 
 	layout (location = 0) in vec3 aPos;
-	layout (location = 1) in mat4 aInstanceModel;
-	// (location = 2) aInstanceModel
-	// (location = 3) aInstanceModel
+	layout (location = 3) in mat4 aInstanceModel;
 	// (location = 4) aInstanceModel
+	// (location = 5) aInstanceModel
+	// (location = 6) aInstanceModel
 
 	uniform mat4 lightVP;
 
@@ -55,8 +56,8 @@ auto genDepthMap(uint width, uint height) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	// Attach the FB to the texture
+	mixin(DEFER_REBIND_CUR_FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFbo);
-	scope (exit) glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMapTex, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
@@ -67,20 +68,21 @@ auto genDepthMap(uint width, uint height) {
 }
 
 void renderToDepthMap(World world, Camera camera, DepthMap depthMap) {
+	mixin(DEFER_REBIND_CUR_FBO);
+
 	glViewport(0, 0, depthMap.width, depthMap.height);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMap.fbo);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
 	auto lightPos = world.pointLights[0].position;
-	//auto lightProj = mat4.orthographic(-10f, 10f, -10f, 10f, 0.01, 5000);
-	auto lightProj = mat4.perspective(-10f, 10f, -10f, 10f, camera.near, camera.far);
+	//const lightPos = vec3(-2, 4, -1);
+	auto lightProj = mat4.orthographic(-10f, 10f, -10f, 10f, 1, 17.5);
+	//auto lightProj = mat4.perspective(-10f, 10f, -10f, 10f, camera.near, camera.far);
 	auto lightView = mat4.look_at(lightPos, vec3(0, 0, 0), vec3(0, 1, 0));
 	const depthShader = presetShaders["simpleDepth"];
 	depthShader.use();
 	depthShader.setMat4("lightVP", lightProj * lightView);
 
 	// Render scene
-	world.draw(camera, depthShader);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	world.drawWorld(camera, depthShader);
 }

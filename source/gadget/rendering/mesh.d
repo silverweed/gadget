@@ -46,37 +46,7 @@ class Mesh {
 			};
 	}
 
-	void draw(Camera camera, in Shader overrideShader = null) const {
-		const shader = (overrideShader is null) ? this.shader : overrideShader;
-		glBindVertexArray(vao);
-		shader.use();
-		setDefaultUniforms(camera);
-		// Set custom uniforms (may overwrite default ones)
-		foreach (k, v; uniforms) {
-			shader.setUni(k, v);
-		}
-
-		auto wasCullEnabled = glIsEnabled(GL_CULL_FACE);
-		cull(cullFace);
-
-		drawFunc(this);
-
-		cull(wasCullEnabled);
-
-		glBindVertexArray(0);
-	}
-
 protected:
-	void setDefaultUniforms(Camera camera) const {
-		const model = mat4.identity
-				.scale(transform.scale.x, transform.scale.y, transform.scale.z)
-				.rotate(transform.rotation.alpha, transform.rotation.axis)
-				.translate(transform.position);
-		shader.setMaterialUniforms(material);
-		shader.setMat4("model", model);
-		shader.setVec3("viewPos", camera.position);
-		shader.setMat4("mvp", camera.projMatrix * camera.viewMatrix * model);
-	}
 	void function(const(Mesh) shape) drawFunc;
 
 	invariant {
@@ -88,3 +58,35 @@ protected:
 	}
 }
 
+void draw(in Mesh mesh, in Camera camera, in Shader shader) {
+	glBindVertexArray(mesh.vao);
+	shader.use();
+	mesh.setDefaultUniforms(camera, shader);
+	// Set custom uniforms (may overwrite default ones)
+	foreach (k, v; mesh.uniforms) {
+		shader.setUni(k, v);
+	}
+
+	auto wasCullEnabled = glIsEnabled(GL_CULL_FACE);
+	cull(mesh.cullFace);
+
+	mesh.drawFunc(mesh);
+
+	cull(wasCullEnabled);
+
+	glBindVertexArray(0);
+}
+
+package void setDefaultUniforms(in Mesh mesh, in Camera camera, in Shader shader) {
+	const t = mesh.transform;
+	const model = mat4.identity
+			.scale(t.scale.x, t.scale.y, t.scale.z)
+			.rotate(t.rotation.alpha, t.rotation.axis)
+			.translate(t.position);
+	shader.setMaterialUniforms(mesh.material);
+	shader.setMat4("model", model);
+	shader.setVec3("viewPos", camera.position);
+	const vp = camera.projMatrix * camera.viewMatrix;
+	shader.setMat4("vp", vp);
+	shader.setMat4("mvp", vp * model);
+}

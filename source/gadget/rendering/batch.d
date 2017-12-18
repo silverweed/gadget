@@ -18,16 +18,12 @@ class Batch : Mesh {
 	this(GLuint vao, GLuint count, Shader shader, bool isIndexed = false) {
 		super(vao, count, shader, isIndexed);
 		if (!isIndexed)
-			drawFunc = (const(Mesh) shape) {
+			drawFunc = (in Mesh shape) {
 				glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
 						(cast(Batch)shape).nInstances);
 			};
-	}
-
-protected:
-	override void setDefaultUniforms(Camera camera) const {
-		super.setDefaultUniforms(camera);
-		shader.setMat4("vp", camera.projMatrix * camera.viewMatrix);
+		else
+			assert(0, "No support for indexed batches yet!");
 	}
 }
 

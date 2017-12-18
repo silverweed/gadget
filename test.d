@@ -24,7 +24,7 @@ float lastFrame = 0;
 
 void main(string[] args) {
 
-	auto nCubes = 1;
+	auto nCubes = 2;
 	if (args.length > 1)
 		nCubes = args[1].to!uint;
 
@@ -39,6 +39,8 @@ void main(string[] args) {
 
 	Mesh[] points;
 	auto cubes = createCubes(nCubes);
+	auto cube = new Mesh(genCube(), cubeVertices.length, presetShaders["default"]);
+	//world.objects ~= cube;
 	world.objects ~= cubes;
 	auto ground = makePreset(ShapeType.QUAD, vec3(0.4, 0.2, 0));
 	ground.transform.position = vec3(0, -2, 0);
@@ -63,9 +65,9 @@ void main(string[] args) {
 		point.material.diffuse = vec3(color.r, color.g, color.b);
 		point.primitive = GL_POINTS;
 		points ~= point;
-		world.objects ~= point;
+		//world.objects ~= point;
 	}
-	world.objects ~= ground;
+	//world.objects ~= ground;
 
 	RenderState.global.clearColor = vec4(0.01, 0.0, 0.09, 1.0);
 
@@ -94,19 +96,19 @@ void main(string[] args) {
 		moveLights(world, points, t);
 
 		// First pass: render scene to render target
-		glBindFramebuffer(GL_FRAMEBUFFER, renderTex.fbo);
+		//glBindFramebuffer(GL_FRAMEBUFFER, renderTex.fbo);
 		const clCol = RenderState.global.clearColor;
 		glClearColor(clCol.r, clCol.g, clCol.b, clCol.a);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
-		//world.draw(camera);
+		//world.drawWorld(camera);
 		world.renderToDepthMap(camera, depthMap);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, RenderState.global.screenSize.x, RenderState.global.screenSize.y);
 		// Second pass: draw render target to screen
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1, 1, 1, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		screenQuadShader.use();
 		glDisable(GL_DEPTH_TEST);
 		glActiveTexture(GL_TEXTURE0);
@@ -190,6 +192,7 @@ auto createCubes(uint n) {
 	}
 	// Put first cube in origin, for convenience
 	cubeModels[0] = mat4.identity;
+	cubeModels[1] = mat4.identity.translate(2, 1, 0).transposed();
 	cubes.nInstances = cast(uint)cubeModels.length;
 	cubes.setData("aInstanceModel", cubeModels);
 	cubes.setData("aDiffuse", cubeDiffuse);

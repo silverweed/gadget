@@ -31,7 +31,7 @@ private class PresetShaderCache {
 			shader = new Shader(vs_billboardQuad, fs_billboardQuad, gs_billboardQuad, name);
 			break;
 		case "simpleDepth":
-			shader = new Shader(vs_simpleDepth, fs_simpleDepth, null, name);
+			shader = new Shader(vs_simpleDepthInstanced, fs_simpleDepth, null, name);
 			break;
 		case "screenQuad":
 			shader = new Shader(vs_screenQuad, fs_screenQuad, null, name);

@@ -112,3 +112,13 @@ void cull(GLubyte cullFace) {
 	else
 		glDisable(GL_CULL_FACE);
 }
+
+/// Defers rebinding the current framebuffer to the function exit.
+/// Use like `mixin(DEFER_REBIND_CUR_FBO);`
+enum DEFER_REBIND_CUR_FBO = q{
+	{
+		GLint curFbo;
+		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &curFbo);
+		scope (exit) glBindFramebuffer(GL_FRAMEBUFFER, curFbo);
+	}
+};

@@ -2,6 +2,7 @@ module gadget.rendering.rendertexture;
 
 import derelict.opengl;
 import gadget.rendering.utils;
+import gadget.rendering.gl;
 
 struct Vertex2D {
 	GLfloat[2] position;
@@ -26,10 +27,11 @@ struct RenderTexture {
 }
 
 auto genRenderTexture(uint width, uint height) {
+	mixin(DEFER_REBIND_CUR_FBO);
+
 	uint fbo;
 	glGenFramebuffers(1, &fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	scope (exit) glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// Create texture for color buffer
 	uint colorBufTex;
