@@ -21,7 +21,6 @@ struct Transform {
 class Mesh {
 	Transform transform;
 	Material material;
-	Uniform[string] uniforms;
 	GLenum primitive = GL_TRIANGLES;
 	Shader shader;
 	GLuint vao;
@@ -58,14 +57,13 @@ protected:
 	}
 }
 
-void draw(in Mesh mesh, in Camera camera, in Shader shader) {
+void draw(in Mesh mesh, in Camera camera, Shader shader) {
 	glBindVertexArray(mesh.vao);
 	shader.use();
 	mesh.setDefaultUniforms(camera, shader);
 	// Set custom uniforms (may overwrite default ones)
-	foreach (k, v; mesh.uniforms) {
-		shader.setUni(k, v);
-	}
+	shader.applyUniforms();
+	debug shader.assertAllUniformsDefined();
 
 	auto wasCullEnabled = glIsEnabled(GL_CULL_FACE);
 	cull(mesh.cullFace);
@@ -77,17 +75,17 @@ void draw(in Mesh mesh, in Camera camera, in Shader shader) {
 	glBindVertexArray(0);
 }
 
-package void setDefaultUniforms(in Mesh mesh, in Camera camera, in Shader shader) {
+package void setDefaultUniforms(in Mesh mesh, in Camera camera, Shader shader) {
 	const t = mesh.transform;
 	const model = mat4.identity
 			.scale(t.scale.x, t.scale.y, t.scale.z)
 			.rotate(t.rotation.alpha, t.rotation.axis)
 			.translate(t.position);
 	shader.setMaterialUniforms(mesh.material);
-	shader.setMat4("model", model);
-	shader.setVec3("viewPos", camera.position);
+	shader.uniforms["model"] = model;
+	shader.uniforms["viewPos"] = camera.position;
 	const vp = camera.projMatrix * camera.viewMatrix;
-	shader.setMat4("vp", vp);
-	shader.setMat4("mvp", vp * model);
-	shader.setInt("depthMap", 0);
+	shader.uniforms["vp"] = vp;
+	shader.uniforms["mvp"] = vp * model;
+	shader.uniforms["depthMap"] = 0;
 }

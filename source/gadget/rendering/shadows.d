@@ -74,14 +74,6 @@ void renderToDepthMap(World world, Camera camera, DepthMap depthMap) {
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMap.fbo);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
-	const lightPos = world.pointLights[0].position;
-	auto lightProj = mat4.orthographic(-10f, 10f, -10f, 10f, 1, 25.5);
-	//auto lightProj = mat4.perspective(-10f, 10f, -10f, 10f, camera.near, camera.far);
-	auto lightView = mat4.look_at(lightPos, vec3(0, 0, 0), vec3(0, 1, 0));
-	const depthShader = presetShaders["simpleDepth"];
-	depthShader.use();
-	depthShader.setMat4("lightVP", lightProj * lightView);
-
 	// Render scene
-	world.drawWorld(camera, depthShader);
+	world.drawWorld(camera, presetShaders["simpleDepth"]);
 }

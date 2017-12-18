@@ -213,9 +213,9 @@ void moveLights(World world, Mesh[] points, float t) {
 				3f + 2f * (i+1) * sin(t / 5 + i * 0.7),
 				7 * (i+1) * cos(t + i * 0.7));
 		// Update light gizmo
-		points[i].uniforms["radius"] = 0.8;
-		points[i].uniforms["scrWidth"] = RenderState.global.screenSize.x;
-		points[i].uniforms["scrHeight"] = RenderState.global.screenSize.y;
+		points[i].shader.uniforms["radius"] = 0.8;
+		points[i].shader.uniforms["scrWidth"] = RenderState.global.screenSize.x;
+		points[i].shader.uniforms["scrHeight"] = RenderState.global.screenSize.y;
 		points[i].transform.position = lightPos;
 
 		world.pointLights[i].position = lightPos;

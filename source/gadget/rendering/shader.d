@@ -2,6 +2,7 @@ module gadget.rendering.shader;
 
 import std.file : readText;
 import std.stdio;
+import std.algorithm;
 import std.string;
 import std.traits;
 import std.variant;
@@ -18,6 +19,8 @@ alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, v
 
 class Shader {
 	const string name;
+
+	Uniform[string] uniforms;
 
 	@property auto id() const { return _id; }
 
@@ -81,8 +84,69 @@ class Shader {
 			glDeleteShader(gsId);
 	}
 
+	void applyUniforms() {
+		foreach (k, v; uniforms) {
+			setUni(this, k, v);
+		}
+	}
+
+	debug void assertAllUniformsDefined() {
+		bool ok = true;
+		foreach (k; declaredUniforms) {
+			if (!(k in uniforms)) {
+				writeln("[ ERROR ] Uniform '", k, "' was not defined for shader ", name);
+				ok = false;
+			}
+		}
+		if (!ok)
+			assert(0);
+	}
+
 private:
 	int _id;
+	debug {
+		string[] declaredUniforms;
+		void fillDeclaredUniforms(string code) {
+			import std.regex : ctRegex, matchFirst;
+			enum basicTypes = ["vec2", "vec3", "vec4", "mat2", "mat3", "mat4", "float",
+					"int", "uint", "bool", "double", "sampler2D"];
+			const addu = function(string[] declaredUniforms, string ident) {
+				if (!declaredUniforms.canFind(ident))
+					declaredUniforms ~= ident;
+				return declaredUniforms;
+			};
+			auto rgx = ctRegex!(`^uniform (\S+) ([a-zA-Z0-9_]+);`); // don't capture array uniforms
+			foreach (line; code.split("\n")) {
+				line = line.strip();
+
+				const m = matchFirst(line, rgx);
+				if (m.empty) continue;
+				const type = m[1];
+				const ident = m[2];
+				if (basicTypes.canFind(type)) {
+					declaredUniforms = addu(declaredUniforms, ident);
+				} else {
+					template AddUsedDefinedUni(T) {
+						enum AddUsedDefinedUni = `
+						{
+							const fields = __traits(allMembers, ` ~ T.stringof ~ `);
+							foreach (fld; fields)
+								declaredUniforms = addu(declaredUniforms, ident ~ "." ~ fld);
+						}
+						`;
+					}
+					switch (type) {
+					case "DirLight": mixin(AddUsedDefinedUni!(DirLight)); break;
+					case "AmbientLight": mixin(AddUsedDefinedUni!(AmbientLight)); break;
+					case "PointLight": mixin(AddUsedDefinedUni!(DirLight)); break;
+					case "Material": mixin(AddUsedDefinedUni!(Material)); break;
+					default: assert(0, "unknown uniform type " ~ type);
+					}
+				}
+			}
+			writeln("Shader ", name, " defined the following uniforms: ", declaredUniforms);
+		}
+	}
 }
 
 /// Sets `shader` as current.
