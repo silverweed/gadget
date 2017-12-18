@@ -63,7 +63,7 @@ void draw(in Mesh mesh, in Camera camera, Shader shader) {
 	mesh.setDefaultUniforms(camera, shader);
 	// Set custom uniforms (may overwrite default ones)
 	shader.applyUniforms();
-	debug shader.assertAllUniformsDefined();
+	shader.assertAllUniformsDefined();
 
 	auto wasCullEnabled = glIsEnabled(GL_CULL_FACE);
 	cull(mesh.cullFace);

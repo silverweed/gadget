@@ -39,7 +39,7 @@ private void setUniforms(World world, Shader shader) {
 	shader.uniforms["ambientLight.strength"] = world.ambientLight.strength;
 	shader.uniforms["dirLight.direction"] = world.dirLight.direction;
 	shader.uniforms["dirLight.diffuse"] = world.dirLight.diffuse;
-	shader.uniforms["nPointLights"] = cast(GLuint)world.pointLights.length;
+	shader.uniforms["nPointLights"] = cast(GLint)world.pointLights.length;
 	foreach (i, pl; world.pointLights) {
 		shader.uniforms["pointLight[%d].position".format(i)] = pl.position;
 		shader.uniforms["pointLight[%d].diffuse".format(i)] = pl.diffuse;

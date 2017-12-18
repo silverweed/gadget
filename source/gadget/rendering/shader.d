@@ -13,7 +13,7 @@ import gl3n.linalg;
 import gadget.rendering.utils : NULL;
 import gadget.rendering.material;
 
-alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, vec4, mat2, mat3, mat4,
+alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, vec4, mat2, mat3, mat4, string,
 		const(bool), const(GLint), const(GLuint), const(GLfloat), const(GLdouble), const(vec2),
 		const(vec3), const(vec4), const(mat2), const(mat3), const(mat4));
 
@@ -82,6 +82,10 @@ class Shader {
 		glDeleteShader(fsId);
 		if (gsId)
 			glDeleteShader(gsId);
+
+		fillDeclaredUniforms(vsCode);
+		fillDeclaredUniforms(fsCode);
+		if (gsCode !is null) fillDeclaredUniforms(gsCode);
 	}
 
 	void applyUniforms() {
@@ -92,10 +96,17 @@ class Shader {
 
 	debug void assertAllUniformsDefined() {
 		bool ok = true;
-		foreach (k; declaredUniforms) {
+		foreach (k, decl; declaredUniforms) {
+			writeln("declared: ", declaredUniforms[k].type, " ", k, ", real: ", uniforms[k].type);
 			if (!(k in uniforms)) {
-				writeln("[ ERROR ] Uniform '", k, "' was not defined for shader ", name);
+				writeln("[ ERROR ] Uniform '", k, "' was not defined for shader '", name, "'");
 				ok = false;
+			} else {
+				if (uniforms[k].type != decl.type) {
+					writeln("[ ERROR ] Uniform '", k, "' has type incompatible with declared in shader '",
+							name, "' (declared: ", decl.type, ", real: ", uniforms[k].type, ")");
+					ok = false;
+				}
 			}
 		}
 		if (!ok)
@@ -105,16 +116,11 @@ class Shader {
 private:
 	int _id;
 	debug {
-		string[] declaredUniforms;
+		Uniform[string] declaredUniforms;
 		void fillDeclaredUniforms(string code) {
 			import std.regex : ctRegex, matchFirst;
 			enum basicTypes = ["vec2", "vec3", "vec4", "mat2", "mat3", "mat4", "float",
 					"int", "uint", "bool", "double", "sampler2D"];
-			const addu = function(string[] declaredUniforms, string ident) {
-				if (!declaredUniforms.canFind(ident))
-					declaredUniforms ~= ident;
-				return declaredUniforms;
-			};
 			auto rgx = ctRegex!(`^uniform (\S+) ([a-zA-Z0-9_]+);`); // don't capture array uniforms
 			foreach (line; code.split("\n")) {
 				line = line.strip();
@@ -124,14 +130,26 @@ private:
 				const type = m[1];
 				const ident = m[2];
 				if (basicTypes.canFind(type)) {
-					declaredUniforms = addu(declaredUniforms, ident);
+					declaredUniforms[ident] = defaultForType(type);
 				} else {
 					template AddUsedDefinedUni(T) {
 						enum AddUsedDefinedUni = `
 						{
+							` ~ T.stringof ~ ` t;
+							const values = t.tupleof;
 							const fields = __traits(allMembers, ` ~ T.stringof ~ `);
-							foreach (fld; fields)
-								declaredUniforms = addu(declaredUniforms, ident ~ "." ~ fld);
+							enum qualifRgx = ctRegex!(r"(?:.*\()?([a-zA-Z0-9]+)(?:.*\))?");
+							foreach (idx, val; values) {
+								writeln("val is ", typeof(val).stringof);
+								// Kick away type qualifiers
+								const mm = matchFirst(typeof(val).stringof, qualifRgx);
+								if (m.empty)
+									declaredUniforms[fields[idx]] = defaultForType(typeof(val).stringof);
+								else {
+									writeln("matched ", mm[1]);
+									declaredUniforms[fields[idx]] = defaultForType(mm[1]);
+								}
+							}
 						}
 						`;
 					}
@@ -145,6 +163,25 @@ private:
 				}
 			}
 			writeln("Shader ", name, " defined the following uniforms: ", declaredUniforms);
+		}
+
+		Uniform defaultForType(string name) {
+			writeln("defaultForType(", name, ")");
+			switch (name) {
+			case "int": return Uniform(0);
+			case "uint": return Uniform(0u);
+			case "float": return Uniform(0f);
+			case "bool": return Uniform(false);
+			case "double": return Uniform(0.0);
+			case "vec2": return Uniform(vec2());
+			case "vec3": return Uniform(vec3());
+			case "vec4": return Uniform(vec4());
+			case "mat2": return Uniform(mat2());
+			case "mat3": return Uniform(mat3());
+			case "mat4": return Uniform(mat4());
+			case "sampler2D": return Uniform("sampler2D"); // HACK: use string to symbolize sampler2D type
+			default: assert(0, "unknown uniform type " ~ name);
+			}
 		}
 	}
 }
