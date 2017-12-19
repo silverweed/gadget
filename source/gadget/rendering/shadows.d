@@ -67,10 +67,6 @@ auto genDepthMap(uint width, uint height) {
 	return DepthMap(depthMapFbo, width, height, depthMapTex);
 }
 
-void renderToDepthMap(World world, DepthMap depthMap) {
-	world.renderLightDepthMap(world.dirLight, depthMap);
-}
-
 void renderLightDepthMap(World world, DirLight light, DepthMap depthMap) {
 	mixin(DEFER_REBIND_CUR_FBO);
 

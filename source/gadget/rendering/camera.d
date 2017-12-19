@@ -54,7 +54,7 @@ mat4 projMatrix(const Camera camera) pure {
 	return mat4.perspective(camera.width, camera.height, camera.fov, camera.near, camera.far);
 }
 
-void move(Camera camera, Direction dir, float dt) {
+void move(Camera camera, Direction dir, float dt = 1/60.0) {
 	immutable v = camera.moveSpeed * dt;
 	final switch (dir) {
 	case Direction.FWD:

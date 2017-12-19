@@ -17,14 +17,16 @@ import derelict.opengl;
 
 enum WIDTH = 1920;
 enum HEIGHT = 1080;
-enum SHAD_WIDTH = 2048;
-enum SHAD_HEIGHT = 2048;
+enum SHAD_WIDTH = 4096;
+enum SHAD_HEIGHT = 4096;
 
 float deltaTime = 0;
 float lastFrame = 0;
 Chronometer clock;
 
 void main(string[] args) {
+
+	enum nLights = 1;
 
 	auto nCubes = 3;
 	if (args.length > 1)
@@ -34,11 +36,11 @@ void main(string[] args) {
 	initRender();
 	auto window = newWindow(WIDTH, HEIGHT);
 
-	enum nLights = 1;
+	auto world = new World();
+	world.enableShadows(SHAD_WIDTH, SHAD_HEIGHT);
 
 	auto camera = new Camera();
 	camera.position.y = 2;
-	auto world = new World();
 
 	Mesh[] points;
 	auto cubes = createCubes(nCubes);
@@ -79,11 +81,10 @@ void main(string[] args) {
 	debug writeln("starting render loop");
 
 	auto renderTex = genRenderTexture(WIDTH, HEIGHT);
-	auto depthMap = genDepthMap(SHAD_WIDTH, SHAD_HEIGHT);
 	auto screenQuadShader = presetShaders["screenQuad"];
 	//auto screenQuadShader = new Shader(vs_screenQuad, fs_viewDepth);
-	//screenQuadShader.use();
-	//screenQuadShader.setInt("screenTex", 0);
+	screenQuadShader.use();
+	screenQuadShader.uniforms["screenTex"] = 0;
 	//screenQuadShader.setInt("depthMap", 0);
 
 	renderLoop(window, camera, &processInput, (sfWindow *window, Camera camera, RenderState state) {
@@ -92,25 +93,14 @@ void main(string[] args) {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
-		//world.dirLight.direction = vec3(1, sin(t), 1);
-
 		moveLights(world, points, t);
 		world.dirLight.direction = -world.pointLights[0].position;
 
 		// First pass: render scene to depth map
-		world.renderToDepthMap(depthMap);
+		world.renderDepthMaps();
 
 		// Second pass: render scene to quad using generated depth map
-		//glBindFramebuffer(GL_FRAMEBUFFER, renderTex.fbo);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		const clCol = RenderState.global.clearColor;
-		glClearColor(clCol.r, clCol.g, clCol.b, clCol.a);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, depthMap.texture);
-		world.setCamera(camera);
-		world.drawWorld();
+		world.render(camera);
 
 		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		//glViewport(0, 0, RenderState.global.screenSize.x, RenderState.global.screenSize.y);
@@ -122,6 +112,7 @@ void main(string[] args) {
 		//glActiveTexture(GL_TEXTURE0);
 		//glBindTexture(GL_TEXTURE_2D, renderTex.colorBuf);
 		////glBindTexture(GL_TEXTURE_2D, depthMap.texture);
+		//debug screenQuadShader.assertAllUniformsDefined();
 		//drawArrays(renderTex.quadVao, quadVertices.length);
 
 		updateMouse(window, camera);
@@ -136,13 +127,13 @@ void processInput(sfWindow *window, Camera camera, RenderState state) {
 		evtHandler(evt, camera, state);
 
 	if (sfKeyboard_isKeyPressed(sfKeyW))
-		camera.move(Direction.FWD, deltaTime);
+		camera.move(Direction.FWD);
 	if (sfKeyboard_isKeyPressed(sfKeyA))
-		camera.move(Direction.LEFT, deltaTime);
+		camera.move(Direction.LEFT);
 	if (sfKeyboard_isKeyPressed(sfKeyS))
-		camera.move(Direction.BACK, deltaTime);
+		camera.move(Direction.BACK);
 	if (sfKeyboard_isKeyPressed(sfKeyD))
-		camera.move(Direction.RIGHT, deltaTime);
+		camera.move(Direction.RIGHT);
 }
 
 void evtHandler(in sfEvent event, Camera camera, RenderState state) {
