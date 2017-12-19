@@ -118,16 +118,17 @@ enum f_calcShadow = q{
 
 		// Compare depth of this fragment with the one sampled from the shadow map
 		// Use PCF to smooth shadows
+		const int PCF_OFF = 1;
 		float bias = max(0.005, 0.05 * (1.0 - dot(normalize(fs_in.normal), -dirLight.direction)));
 		float shadow = 0.0;
 		vec2 texelSize = 1.0 / textureSize(depthMap, 0);
-		for (int x = -1; x <= 1; ++x) {
-			for (int y = -1; y <= 1; ++y) {
+		for (int x = -PCF_OFF; x <= PCF_OFF; ++x) {
+			for (int y = -PCF_OFF; y <= PCF_OFF; ++y) {
 				float pcfDepth = texture(depthMap, projCoords.xy + vec2(x, y) * texelSize).r;
 				shadow += float(curDepth - bias > pcfDepth);
 			}
 		}
-		shadow /= 9.0;
+		shadow /= pow(2.0 * PCF_OFF + 1.0, 2.0);
 
 		return float(projCoords.z <= 1.0) * shadow;
 	}

@@ -17,8 +17,8 @@ import derelict.opengl;
 
 enum WIDTH = 1920;
 enum HEIGHT = 1080;
-enum SHAD_WIDTH = 4096;
-enum SHAD_HEIGHT = 4096;
+enum SHAD_WIDTH = 16384;
+enum SHAD_HEIGHT = 16384;
 
 float deltaTime = 0;
 float lastFrame = 0;

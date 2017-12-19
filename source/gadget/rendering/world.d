@@ -51,12 +51,13 @@ void setCamera(World world, in Camera camera, Shader shader = null) {
 
 void setLightUniforms(World world, Shader shader, DirLight light) {
 	// XXX: These values are blindly guessed
-	enum near = 1;
-	enum far = 20;
-	enum w = 30;
-	enum h = 30;
+	enum near = 3;
+	enum far = 30;
+	enum w = 50;
+	enum h = 50;
 
 	const lightProj = mat4.orthographic(-w, w, -h, h, near, far);
+	//const lightProj = mat4.perspective(-w, w, -h, h, near, far);
 	const lightView = mat4.look_at(-light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
 
 	shader.uniforms["lightVP"] = lightProj * lightView;
