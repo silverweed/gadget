@@ -24,12 +24,12 @@ class Batch : Mesh {
 	}
 }
 
-void setData(T)(Batch batch, string name, T[] data) {
+auto setData(T)(Batch batch, string name, T[] data, GLenum usage = GL_STATIC_DRAW) {
 	GLuint iVbo;
 	glGenBuffers(1, &iVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, iVbo);
 	// FIXME: we allocate 1 extra space or last element of `data` will be ignored. Not sure why though.
-	glBufferData(GL_ARRAY_BUFFER, T.sizeof * (data.length + 1), data.ptr, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, T.sizeof * (data.length + 1), data.ptr, usage);
 
 	const loc = glGetAttribLocation(batch.shader.id, name.toStringz());
 	assert(loc >= 0, "Found no attribute " ~ name ~ " for shader " ~ batch.shader.name);
@@ -57,4 +57,6 @@ void setData(T)(Batch batch, string name, T[] data) {
 	}
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	return iVbo;
 }

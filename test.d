@@ -93,6 +93,8 @@ void main(string[] args) {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
+		moveCubes(cubes, deltaTime);
+
 		moveLights(world, points, t);
 		world.dirLight.direction = -world.pointLights[0].position;
 
@@ -173,10 +175,13 @@ void updateMouse(sfWindow *window, Camera camera) {
 	}
 }
 
+mat4[] cubeModels;
+int cubeModelsVbo;
+
 auto createCubes(uint n) {
 	auto cubes = new Batch(genCube(), cubeVertices.length, presetShaders["defaultInstanced"]);
 	cubes.cullFace = true;
-	auto cubeModels = new mat4[n];
+	cubeModels = new mat4[n];
 	auto cubeDiffuse = new vec3[cubeModels.length];
 	auto cubeSpecular = new vec3[cubeModels.length];
 	auto cubeShininess = new float[cubeModels.length];
@@ -199,7 +204,7 @@ auto createCubes(uint n) {
 	cubeModels[1] = mat4.identity.translate(0, 2, 0).rotate(0.0, vec3(1, 0, 0)).transposed();
 	cubeModels[2] = mat4.identity.translate(0, 0.5, 2).rotate(0.0, vec3(0, 1, 0)).transposed();
 	cubes.nInstances = cast(uint)cubeModels.length;
-	cubes.setData("aInstanceModel", cubeModels);
+	cubeModelsVbo = cubes.setData("aInstanceModel", cubeModels, GL_STREAM_DRAW); // this data will be updated every frame
 	cubes.setData("aDiffuse", cubeDiffuse);
 	cubes.setData("aSpecular", cubeSpecular);
 	cubes.setData("aShininess", cubeShininess);
@@ -219,6 +224,44 @@ void moveLights(World world, Mesh[] points, float t) {
 
 		world.pointLights[i].position = lightPos;
 	}
+}
+
+void moveCubes(Batch cubes, float dt) {
+	static vec3[] cubeVelocities;
+	static quat[] cubeSpins;
+	static float mt = 3;
+	if (cubeVelocities.length == 0) {
+		cubeVelocities = new vec3[cubeModels.length];
+	}
+	if (cubeSpins.length == 0) {
+		cubeSpins = new quat[cubeModels.length];
+	}
+	mt += dt;
+	if (mt > 2) {
+		for (int i = 0; i < cubeVelocities.length; ++i) {
+			cubeVelocities[i] = vec3(uniform(-1, 1), uniform(-1, 1), uniform(-1, 1));
+			cubeSpins[i] = to_quat(uniform(-1, 1), uniform(-1, 1), uniform(-1, 1));
+		}
+		mt = 0;
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, cubeModelsVbo);
+	const bufsize = mat4.sizeof * (cubeModels.length + 1);
+	// Realloc the buffer to orphan it
+	glBufferData(GL_ARRAY_BUFFER, bufsize, NULL, GL_STREAM_DRAW);
+	
+	foreach (i, model; cubeModels) {
+		const v = cubeVelocities[i] * dt * 3;
+		//cubeModels[i] = model
+		cubeModels[i] = model.transposed()
+				//.rotate(cubeSpins[i].alpha * 0.1, cubeSpins[i].axis)
+				.translate(v.x, v.y, v.z)
+				.transposed()
+				;
+	}
+	
+	// Update the data
+	glBufferSubData(GL_ARRAY_BUFFER, 0, bufsize, cubeModels.ptr);
 }
 
 auto createGround() {
