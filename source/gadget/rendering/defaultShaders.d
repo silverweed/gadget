@@ -108,8 +108,6 @@ enum fi_addDirLight = q{
 
 enum f_calcShadow = q{
 	float calcShadow(vec4 lightSpaceFragPos) {
-		const float bias = 0.005;
-
 		// Perform perspective divide (maps coords to [-1, 1])
 		vec3 projCoords = lightSpaceFragPos.xyz / lightSpaceFragPos.w;
 		// Transform [-1, 1] -> [0, 1] to sample from the depth map
@@ -119,7 +117,19 @@ enum f_calcShadow = q{
 		float curDepth = projCoords.z;
 
 		// Compare depth of this fragment with the one sampled from the shadow map
-		return float(curDepth - bias > closestDepth);
+		// Use PCF to smooth shadows
+		float bias = max(0.005, 0.05 * (1.0 - dot(normalize(fs_in.normal), -dirLight.direction)));
+		float shadow = 0.0;
+		vec2 texelSize = 1.0 / textureSize(depthMap, 0);
+		for (int x = -1; x <= 1; ++x) {
+			for (int y = -1; y <= 1; ++y) {
+				float pcfDepth = texture(depthMap, projCoords.xy + vec2(x, y) * texelSize).r;
+				shadow += float(curDepth - bias > pcfDepth);
+			}
+		}
+		shadow /= 9.0;
+
+		return float(projCoords.z <= 1.0) * shadow;
 	}
 };
 

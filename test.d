@@ -195,9 +195,9 @@ auto createCubes(uint n) {
 		cubeShininess[i] = uniform(0, 10);
 	}
 	// Put first cube in origin, for convenience
-	cubeModels[0] = mat4.identity;
-	cubeModels[1] = mat4.identity.translate(0, 1, 0).rotate(0.0, vec3(0, 1, 0)).transposed();
-	cubeModels[2] = mat4.identity.translate(0, 0, 1).rotate(0.0, vec3(0, 1, 0)).transposed();
+	cubeModels[0] = mat4.identity.rotate(PI/4, vec3(1, 0, 0)).transposed();
+	cubeModels[1] = mat4.identity.translate(0, 2, 0).rotate(0.0, vec3(1, 0, 0)).transposed();
+	cubeModels[2] = mat4.identity.translate(0, 0.5, 2).rotate(0.0, vec3(0, 1, 0)).transposed();
 	cubes.nInstances = cast(uint)cubeModels.length;
 	cubes.setData("aInstanceModel", cubeModels);
 	cubes.setData("aDiffuse", cubeDiffuse);

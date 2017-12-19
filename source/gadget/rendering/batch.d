@@ -15,15 +15,12 @@ import gl3n.linalg;
 class Batch : Mesh {
 	GLuint nInstances = 1;
 
-	this(GLuint vao, GLuint count, Shader shader, bool isIndexed = false) {
-		super(vao, count, shader, isIndexed);
-		if (!isIndexed)
-			drawFunc = (in Mesh shape) {
-				glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
-						(cast(Batch)shape).nInstances);
-			};
-		else
-			assert(0, "No support for indexed batches yet!");
+	this(GLuint vao, GLuint count, Shader shader) {
+		super(vao, count, shader);
+		drawFunc = (in Mesh shape) {
+			glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
+					(cast(Batch)shape).nInstances);
+		};
 	}
 }
 

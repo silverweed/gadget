@@ -21,28 +21,22 @@ struct Transform {
 class Mesh {
 	Transform transform;
 	Material material;
-	GLenum primitive = GL_TRIANGLES;
 	Shader shader;
+	GLenum primitive = GL_TRIANGLES;
 	GLuint vao;
-	/// This is the indices count if the mesh is indexed
 	GLuint vertexCount;
 	bool cullFace = false;
 
-	this(GLuint vao, GLuint count, Shader shader, bool isIndexed = false) {
+	this(GLuint vao, GLuint count, Shader shader) {
 		this.vao = vao;
 		this.shader = shader;
 		vertexCount = count;
 		material.diffuse = vec3(0, 0, 0);
 		material.specular = vec3(1, 1, 1);
 		material.shininess = 0.5;
-		if (isIndexed)
-			drawFunc = (in Mesh shape) {
-				glDrawElements(shape.primitive, shape.vertexCount, GL_UNSIGNED_INT, cast(void*)0);
-			};
-		else
-			drawFunc = (in Mesh shape) {
-				glDrawArrays(shape.primitive, 0, shape.vertexCount);
-			};
+		drawFunc = (in Mesh shape) {
+			glDrawArrays(shape.primitive, 0, shape.vertexCount);
+		};
 	}
 
 protected:
