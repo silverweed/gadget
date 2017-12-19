@@ -57,11 +57,11 @@ protected:
 	}
 }
 
-void draw(in Mesh mesh, in Camera camera, Shader shader) {
+void draw(in Mesh mesh, Shader shader) {
 	glBindVertexArray(mesh.vao);
+
 	shader.use();
-	mesh.setDefaultUniforms(camera, shader);
-	// Set custom uniforms (may overwrite default ones)
+	mesh.setDefaultUniforms(shader);
 	shader.applyUniforms();
 	debug shader.assertAllUniformsDefined();
 
@@ -75,7 +75,19 @@ void draw(in Mesh mesh, in Camera camera, Shader shader) {
 	glBindVertexArray(0);
 }
 
-package void setDefaultUniforms(in Mesh mesh, in Camera camera, Shader shader) {
+void setCameraUniforms(Mesh mesh, Shader shader, in Camera camera) {
+	const t = mesh.transform;
+	const model = mat4.identity
+			.scale(t.scale.x, t.scale.y, t.scale.z)
+			.rotate(t.rotation.alpha, t.rotation.axis)
+			.translate(t.position);
+	shader.uniforms["viewPos"] = camera.position;
+	const vp = camera.projMatrix * camera.viewMatrix;
+	shader.uniforms["vp"] = vp;
+	shader.uniforms["mvp"] = vp * model;
+}
+
+package void setDefaultUniforms(in Mesh mesh, Shader shader) {
 	const t = mesh.transform;
 	const model = mat4.identity
 			.scale(t.scale.x, t.scale.y, t.scale.z)
@@ -83,9 +95,5 @@ package void setDefaultUniforms(in Mesh mesh, in Camera camera, Shader shader) {
 			.translate(t.position);
 	shader.setMaterialUniforms(mesh.material);
 	shader.uniforms["model"] = model;
-	shader.uniforms["viewPos"] = camera.position;
-	const vp = camera.projMatrix * camera.viewMatrix;
-	shader.uniforms["vp"] = vp;
-	shader.uniforms["mvp"] = vp * model;
 	shader.uniforms["depthMap"] = 0;
 }

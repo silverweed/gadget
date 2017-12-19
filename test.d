@@ -7,6 +7,7 @@ import std.algorithm;
 import gadget.physics;
 import gadget.rendering;
 import gadget.fpscounter;
+import gadget.chronometer;
 import gadget.rendering.renderstate;
 import derelict.sfml2.window;
 import derelict.sfml2.system;
@@ -21,6 +22,7 @@ enum SHAD_HEIGHT = 2048;
 
 float deltaTime = 0;
 float lastFrame = 0;
+Chronometer clock;
 
 void main(string[] args) {
 
@@ -72,7 +74,7 @@ void main(string[] args) {
 
 	camera.position.z = 4;
 	camera.moveSpeed = 12f;
-	auto clock = sfClock_create();
+	clock = new Chronometer();
 	auto fps = new FPSCounter(2f);
 	debug writeln("starting render loop");
 
@@ -86,16 +88,17 @@ void main(string[] args) {
 
 	renderLoop(window, camera, &processInput, (sfWindow *window, Camera camera, RenderState state) {
 		// Update time
-		const t = sfTime_asSeconds(sfClock_getElapsedTime(clock));
+		auto t = sfTime_asSeconds(clock.getElapsedTime());
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
 		//world.dirLight.direction = vec3(1, sin(t), 1);
 
 		moveLights(world, points, t);
+		world.dirLight.direction = -world.pointLights[0].position;
 
 		// First pass: render scene to depth map
-		world.renderToDepthMap(camera, depthMap);
+		world.renderToDepthMap(depthMap);
 
 		// Second pass: render scene to quad using generated depth map
 		//glBindFramebuffer(GL_FRAMEBUFFER, renderTex.fbo);
@@ -106,7 +109,8 @@ void main(string[] args) {
 		glEnable(GL_DEPTH_TEST);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, depthMap.texture);
-		world.drawWorld(camera);
+		world.setCamera(camera);
+		world.drawWorld();
 
 		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		//glViewport(0, 0, RenderState.global.screenSize.x, RenderState.global.screenSize.y);
@@ -121,7 +125,8 @@ void main(string[] args) {
 		//drawArrays(renderTex.quadVao, quadVertices.length);
 
 		updateMouse(window, camera);
-		fps.update(deltaTime);
+		if (clock.isRunning())
+			fps.update(deltaTime);
 	});
 }
 
@@ -152,6 +157,9 @@ void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 		switch (event.key.code) {
 		case sfKeyQ:
 			quitRender();
+			break;
+		case sfKeyP:
+			clock.toggle();
 			break;
 		default:
 			break;

@@ -97,7 +97,7 @@ class Shader {
 	debug void assertAllUniformsDefined() {
 		bool ok = true;
 		foreach (k; declaredUniforms) {
-			if (!(k in uniforms)) {
+			if (k !in uniforms) {
 				writeln("[ ERROR ] Uniform '", k, "' was not defined for shader ", name);
 				ok = false;
 			}

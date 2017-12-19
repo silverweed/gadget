@@ -1,6 +1,6 @@
 module gadget.rendering.world;
 
-import std.stdio : stderr;
+import std.stdio;
 import std.string;
 import std.algorithm;
 import derelict.sfml2.window;
@@ -22,16 +22,38 @@ class World {
 	PointLight[] pointLights;
 }
 
-void drawWorld(World world, in Camera camera, Shader shader = null) {
+void drawWorld(World world, Shader shader = null) {
+	bool[Shader] processedShaders;
+
 	foreach (obj; world.objects) {
-		if (shader !is null) {
-			world.setUniforms(shader);
-			obj.draw(camera, shader);
-		} else {
-			world.setUniforms(obj.shader);
-			obj.draw(camera, obj.shader);
+		Shader sh = (shader is null) ? obj.shader : shader;
+	
+		// Set uniforms
+		if (sh !in processedShaders) {
+			world.setUniforms(sh);
+			world.setLightUniforms(sh, world.dirLight);
+			processedShaders[sh] = true;
 		}
+
+		obj.draw(sh);
 	}
+}
+
+void setCamera(World world, in Camera camera, Shader shader = null) {
+	foreach (obj; world.objects) {
+		obj.setCameraUniforms((shader is null) ? obj.shader : shader, camera);
+	}
+}
+
+void setLightUniforms(World world, Shader shader, DirLight light) {
+	// XXX: Near and far values are blindly guessed
+	enum near = 1;
+	enum far = 20;
+
+	const lightProj = mat4.orthographic(-10f, 10f, -10f, 10f, near, far);
+	const lightView = mat4.look_at(-light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
+
+	shader.uniforms["lightVP"] = lightProj * lightView;
 }
 
 private void setUniforms(World world, Shader shader) {
@@ -45,10 +67,4 @@ private void setUniforms(World world, Shader shader) {
 		shader.uniforms["pointLight[%d].diffuse".format(i)] = pl.diffuse;
 		shader.uniforms["pointLight[%d].attenuation".format(i)] = pl.attenuation;
 	}
-	// Shadows (TODO)
-	const lightPos = world.pointLights[0].position;
-	//const lightPos = vec3(-4, 4, -1);
-	const lightProj = mat4.orthographic(-10f, 10f, -10f, 10f, 1, 17.5);
-	const lightView = mat4.look_at(lightPos, vec3(0, 0, 0), vec3(0, 1, 0));
-	shader.uniforms["lightVP"] = lightProj * lightView;
 }
