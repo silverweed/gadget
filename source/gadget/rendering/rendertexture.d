@@ -22,11 +22,11 @@ immutable Vertex2D[12] screenQuadVertices = [
 struct RenderTexture {
 	uint fbo;
 	uint quadVao;
-	uint colorBuf;
+	uint[] colorBufs;
 	uint depthStencilBuf;
 }
 
-auto genRenderTexture(uint width, uint height) {
+auto genRenderTexture(uint width, uint height, uint nColorBufs = 1, bool withDepthStencil = true) {
 	mixin(DEFER_REBIND_CUR_FBO);
 
 	uint fbo;
@@ -34,26 +34,39 @@ auto genRenderTexture(uint width, uint height) {
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
 	// Create texture for color buffer
-	uint colorBufTex;
-	glGenTextures(1, &colorBufTex);
-	glBindTexture(GL_TEXTURE_2D, colorBufTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	auto colorBufTex = new uint[nColorBufs];
+	glGenTextures(nColorBufs, colorBufTex.ptr);
+	for (uint i = 0; i < colorBufTex.length; ++i) {
+		glBindTexture(GL_TEXTURE_2D, colorBufTex[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height,
+				0, GL_RGB, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	// Attach color buffer to fbo
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBufTex, 0);
+		// Attach color buffer to fbo
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
+				GL_TEXTURE_2D, colorBufTex[i], 0);
+	}
+	glBindTexture(GL_TEXTURE_2D, 0);
+	uint[] attachments;
+	for (uint i = 0; i < nColorBufs; ++i)
+		attachments ~= GL_COLOR_ATTACHMENT0 + i;
+	glDrawBuffers(nColorBufs, attachments.ptr);
 
 	// Create renderbuffer for depth and stencil buffers
 	uint rbo;
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	if (withDepthStencil) {
+		glGenRenderbuffers(1, &rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-	// Attach it
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+		// Attach it
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+				GL_RENDERBUFFER, rbo);
+	}
 
 	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 

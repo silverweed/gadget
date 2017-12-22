@@ -99,7 +99,7 @@ void renderDepthMaps(World world) {
 void enablePostProcessing(World world) {
 	assert(!world.ppEnabled, "Enabled PP on world but world already has render texture!");
 
-	world.renderTex = genRenderTexture(RenderState.global.screenSize.x, RenderState.global.screenSize.y);
+	world.renderTex = genRenderTexture(RenderState.global.screenSize.x, RenderState.global.screenSize.y, 2);
 	world.ppEnabled = true;
 
 	auto screenQuadShader = presetShaders["screenQuad"];
@@ -126,8 +126,9 @@ void renderQuad(World world, uint target = 0) {
 	auto screenQuadShader = presetShaders["screenQuad"];
 	screenQuadShader.use();
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, world.renderTex.colorBuf);
+	glBindTexture(GL_TEXTURE_2D, world.renderTex.colorBufs[0]);
 	debug screenQuadShader.assertAllUniformsDefined();
+	screenQuadShader.applyUniforms();
 	drawArrays(world.renderTex.quadVao, quadVertices.length);
 }
 

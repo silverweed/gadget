@@ -81,6 +81,13 @@ void main(string[] args) {
 	auto fps = new FPSCounter(2f);
 	debug writeln("starting render loop");
 
+	auto blurShader = Shader.fromFiles("shaders/gaussianblur.vert", "shaders/gaussianblur.frag");
+	auto blurTex = [
+		genRenderTexture(WIDTH, HEIGHT, 1, false),
+		genRenderTexture(WIDTH, HEIGHT, 1, false)
+	];
+	auto bloomShader = Shader.fromFiles("shaders/gaussianblur.vert", "shaders/bloom.frag");
+
 	renderLoop(window, camera, &processInput, (sfWindow *window, Camera camera, RenderState state) {
 		// Update time
 		auto t = sfTime_asSeconds(clock.getElapsedTime());
@@ -99,9 +106,24 @@ void main(string[] args) {
 		world.renderToInternalTex(camera);
 
 		// [Insert post processing passes here]
+		gaussBlur(blurShader, blurTex, world);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+		bloomShader.use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, world.renderTex.colorBufs[0]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, blurTex[0].colorBufs[0]);
+		bloomShader.uniforms["bloom"] = doBloom;
+		bloomShader.uniforms["scene"] = 0;
+		bloomShader.uniforms["bloomBlur"] = 1;
+		debug bloomShader.assertAllUniformsDefined();
+		bloomShader.applyUniforms();
+		drawArrays(world.renderTex.quadVao, quadVertices.length);
 
 		// Final pass: render quad to screen
-		world.renderQuad();
+		//world.renderQuad();
 
 		updateMouse(window, camera);
 		if (clock.isRunning())
@@ -124,6 +146,7 @@ void processInput(sfWindow *window, Camera camera, RenderState state) {
 		camera.move(Direction.RIGHT);
 }
 
+bool doBloom = true;
 void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 	switch (event.type) {
 	case sfEvtResized:
@@ -139,6 +162,9 @@ void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 			break;
 		case sfKeyP:
 			clock.toggle();
+			break;
+		case sfKeyB:
+			doBloom = !doBloom;
 			break;
 		default:
 			break;
@@ -190,6 +216,8 @@ auto createCubes(uint n) {
 	cubeModels[1] = mat4.identity.translate(0, 2, 0).rotate(0.0, vec3(1, 0, 0)).transposed();
 	cubeModels[2] = mat4.identity.translate(0, 0.5, 2).rotate(0.0, vec3(0, 1, 0)).transposed();
 	cubeShininess[2] = 10000;
+	cubeShininess[1] = 100;
+	cubeShininess[0] = 1;
 	cubes.nInstances = cast(uint)cubeModels.length;
 	cubeModelsVbo = cubes.setData("aInstanceModel", cubeModels, GL_STREAM_DRAW); // this data will be updated every frame
 	cubes.setData("aDiffuse", cubeDiffuse);
@@ -262,4 +290,28 @@ auto createGround() {
 	ground.setData("aSpecular", [ vec3(0.02, 0.01, 0) ]);
 	ground.setData("aShininess", [ 0.3 ]);
 	return ground;
+}
+
+void gaussBlur(Shader blurShader, RenderTexture[] blurTex, World world) {
+	bool horizontal = true, first_iteration = true;
+	enum amount = 8;
+	blurShader.use();
+	blurShader.uniforms["image"] = 0;
+	for (uint i = 0; i < amount; i++) {
+		glBindFramebuffer(GL_FRAMEBUFFER, blurTex[horizontal].fbo);
+		blurShader.uniforms["horizontal"] = horizontal;
+		glBindTexture(
+			GL_TEXTURE_2D, first_iteration
+				? world.renderTex.colorBufs[1]
+				: blurTex[!horizontal].colorBufs[0]
+		);
+		debug blurShader.assertAllUniformsDefined();
+		blurShader.applyUniforms();
+		drawArrays(blurTex[horizontal].quadVao, quadVertices.length);
+		//world.renderQuad(blurTex[horizontal].quadVao);
+		horizontal = !horizontal;
+		if (first_iteration)
+			first_iteration = false;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

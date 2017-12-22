@@ -226,7 +226,8 @@ enum fs_blinnPhong = MATERIAL_HEADER ~ q{
 
 enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 
-	out vec4 fragColor;
+	layout (location = 0) out vec4 fragColor;
+	layout (location = 1) out vec4 brightColor;
 
 	in VS_OUT {
 		vec3 fragPos;
@@ -257,6 +258,9 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 		result = result * (1.0 - shadow) + addAmbientLight(ambientLight);
 
 		fragColor = vec4(result, 1.0);
+
+		float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+		brightColor = vec4(float(brightness > 1.0) * fragColor.rgb, 1.0);
 	}
 };
 
