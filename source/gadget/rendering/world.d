@@ -8,6 +8,9 @@ import derelict.opengl;
 import gl3n.linalg;
 import gadget.rendering.gl;
 import gadget.rendering.material;
+import gadget.rendering.rendertexture;
+import gadget.rendering.presets;
+import gadget.rendering.shapes;
 import gadget.rendering.camera;
 import gadget.rendering.shader;
 import gadget.rendering.renderstate;
@@ -24,6 +27,9 @@ class World {
 	PointLight[] pointLights;
 
 	DepthMap[] depthMaps;
+
+	RenderTexture renderTex;
+	bool ppEnabled = false;
 }
 
 void drawWorld(World world, Shader shader = null) {
@@ -88,6 +94,41 @@ void renderDepthMaps(World world) {
 	assert(world.depthMaps.length > 0, "Tried to render depth maps on world without shadows enabled!");
 	
 	world.renderLightDepthMap(world.dirLight, world.depthMaps[0]);
+}
+
+void enablePostProcessing(World world) {
+	assert(!world.ppEnabled, "Enabled PP on world but world already has render texture!");
+
+	world.renderTex = genRenderTexture(RenderState.global.screenSize.x, RenderState.global.screenSize.y);
+	world.ppEnabled = true;
+
+	auto screenQuadShader = presetShaders["screenQuad"];
+	screenQuadShader.use();
+	screenQuadShader.uniforms["screenTex"] = 0;
+}
+
+// Renders the world from `camera`'s point of view to the internal render texture.
+void renderToInternalTex(World world, in Camera camera) {
+	assert(world.ppEnabled, "Rendering to internal on world but world already has no render texture!");
+	world.render(camera, world.renderTex.fbo);
+}
+
+// Draws the internal render texture quad to the screen
+void renderQuad(World world, uint target = 0) {
+	mixin(DEFER_REBIND_CUR_FBO);
+
+	glViewport(0, 0, RenderState.global.screenSize.x, RenderState.global.screenSize.y);
+	glBindFramebuffer(GL_FRAMEBUFFER, target);
+
+	glClearColor(1, 1, 1, 1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	auto screenQuadShader = presetShaders["screenQuad"];
+	screenQuadShader.use();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, world.renderTex.colorBuf);
+	debug screenQuadShader.assertAllUniformsDefined();
+	drawArrays(world.renderTex.quadVao, quadVertices.length);
 }
 
 void render(World world, in Camera camera, uint target = 0) {

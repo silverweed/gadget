@@ -38,6 +38,7 @@ void main(string[] args) {
 
 	auto world = new World();
 	world.enableShadows(SHAD_WIDTH, SHAD_HEIGHT);
+	world.enablePostProcessing();
 
 	auto camera = new Camera();
 	camera.position.y = 2;
@@ -80,20 +81,13 @@ void main(string[] args) {
 	auto fps = new FPSCounter(2f);
 	debug writeln("starting render loop");
 
-	auto renderTex = genRenderTexture(WIDTH, HEIGHT);
-	auto screenQuadShader = presetShaders["screenQuad"];
-	//auto screenQuadShader = new Shader(vs_screenQuad, fs_viewDepth);
-	screenQuadShader.use();
-	screenQuadShader.uniforms["screenTex"] = 0;
-	//screenQuadShader.setInt("depthMap", 0);
-
 	renderLoop(window, camera, &processInput, (sfWindow *window, Camera camera, RenderState state) {
 		// Update time
 		auto t = sfTime_asSeconds(clock.getElapsedTime());
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
-		moveCubes(cubes, deltaTime);
+		//moveCubes(cubes, deltaTime);
 
 		moveLights(world, points, t);
 		world.dirLight.direction = -world.pointLights[0].position;
@@ -102,20 +96,12 @@ void main(string[] args) {
 		world.renderDepthMaps();
 
 		// Second pass: render scene to quad using generated depth map
-		world.render(camera);
+		world.renderToInternalTex(camera);
 
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		//glViewport(0, 0, RenderState.global.screenSize.x, RenderState.global.screenSize.y);
-		//// Third pass: draw render target to screen
-		//glClearColor(1, 1, 1, 1);
-		//glClear(GL_COLOR_BUFFER_BIT);
-		//screenQuadShader.use();
-		//glDisable(GL_DEPTH_TEST);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, renderTex.colorBuf);
-		////glBindTexture(GL_TEXTURE_2D, depthMap.texture);
-		//debug screenQuadShader.assertAllUniformsDefined();
-		//drawArrays(renderTex.quadVao, quadVertices.length);
+		// [Insert post processing passes here]
+
+		// Final pass: render quad to screen
+		world.renderQuad();
 
 		updateMouse(window, camera);
 		if (clock.isRunning())
@@ -203,6 +189,7 @@ auto createCubes(uint n) {
 	cubeModels[0] = mat4.identity.rotate(PI/4, vec3(1, 0, 0)).transposed();
 	cubeModels[1] = mat4.identity.translate(0, 2, 0).rotate(0.0, vec3(1, 0, 0)).transposed();
 	cubeModels[2] = mat4.identity.translate(0, 0.5, 2).rotate(0.0, vec3(0, 1, 0)).transposed();
+	cubeShininess[2] = 10000;
 	cubes.nInstances = cast(uint)cubeModels.length;
 	cubeModelsVbo = cubes.setData("aInstanceModel", cubeModels, GL_STREAM_DRAW); // this data will be updated every frame
 	cubes.setData("aDiffuse", cubeDiffuse);
