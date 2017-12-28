@@ -9,22 +9,28 @@ import gadget.rendering.presets;
 import gadget.rendering.camera;
 import gadget.rendering.renderstate;
 
-// FIXME
-struct RenderInitOptions {
-	string sfmlSystemLib = "/usr/lib/x86_64-linux-gnu/libcsfml-system.so.2.4";
-	string sfmlWindowLib = "/usr/lib/x86_64-linux-gnu/libcsfml-window.so.2.4";
-}
+private immutable string[] sfmlSearchPath = [
+	"/usr/lib/x86_64-linux-gnu/",
+	"/usr/lib/",
+];
 
 sfContextSettings ctxSettings;
 
 private bool running = true;
 
 /// Loads the rendering libraries (GL3 + SFML2) and sets the default context settings.
-bool initRender(in RenderInitOptions opts = RenderInitOptions()) {
+bool initRender() {
 	// Load shared C libraries
 	DerelictGL3.load();
-	DerelictSFML2System.load(opts.sfmlSystemLib);
-	DerelictSFML2Window.load(opts.sfmlWindowLib);
+	for (int i = 0; i < sfmlSearchPath.length; ++i) {
+		try {
+			DerelictSFML2System.load(sfmlSearchPath[i] ~ "libcsfml-system.so.2.4");
+			DerelictSFML2Window.load(sfmlSearchPath[i] ~ "libcsfml-window.so.2.4");
+			break;
+		} catch (Exception e) {
+			continue;
+		}
+	}
 
 	// Create openGL context
 	ctxSettings.majorVersion = 3;

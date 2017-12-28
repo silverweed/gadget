@@ -239,7 +239,6 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 
 	uniform vec3 viewPos;
 	uniform PointLight pointLight[MAX_POINT_LIGHTS];
-	uniform int nPointLights;
 	uniform DirLight dirLight;
 	uniform AmbientLight ambientLight;
 

@@ -106,24 +106,24 @@ void main(string[] args) {
 		world.renderToInternalTex(camera);
 
 		// [Insert post processing passes here]
-		gaussBlur(blurShader, blurTex, world);
+		//gaussBlur(blurShader, blurTex, world);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-		bloomShader.use();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, world.renderTex.colorBufs[0]);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, blurTex[0].colorBufs[0]);
-		bloomShader.uniforms["bloom"] = doBloom;
-		bloomShader.uniforms["scene"] = 0;
-		bloomShader.uniforms["bloomBlur"] = 1;
-		debug bloomShader.assertAllUniformsDefined();
-		bloomShader.applyUniforms();
-		drawArrays(world.renderTex.quadVao, quadVertices.length);
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		//glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+		//bloomShader.use();
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, world.renderTex.colorBufs[0]);
+		//glActiveTexture(GL_TEXTURE1);
+		//glBindTexture(GL_TEXTURE_2D, blurTex[0].colorBufs[0]);
+		//bloomShader.uniforms["bloom"] = doBloom;
+		//bloomShader.uniforms["scene"] = 0;
+		//bloomShader.uniforms["bloomBlur"] = 1;
+		//debug bloomShader.assertAllUniformsDefined();
+		//bloomShader.applyUniforms();
+		//drawArrays(world.renderTex.quadVao, quadVertices.length);
 
 		// Final pass: render quad to screen
-		//world.renderQuad();
+		world.renderQuad();
 
 		updateMouse(window, camera);
 		if (clock.isRunning())
