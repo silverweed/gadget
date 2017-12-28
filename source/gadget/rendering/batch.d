@@ -18,6 +18,8 @@ class Batch : Mesh {
 	this(GLuint vao, GLuint count, Shader shader) {
 		super(vao, count, shader);
 		drawFunc = (in Mesh shape) {
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, shape.diffuseTexId);
 			glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
 					(cast(Batch)shape).nInstances);
 		};

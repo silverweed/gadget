@@ -21,6 +21,7 @@ struct Transform {
 class Mesh {
 	Transform transform;
 	Material material;
+	uint diffuseTexId;
 	Shader shader;
 	GLenum primitive = GL_TRIANGLES;
 	GLuint vao;
@@ -35,6 +36,8 @@ class Mesh {
 		material.specular = vec3(1, 1, 1);
 		material.shininess = 0.5;
 		drawFunc = (in Mesh shape) {
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, shape.diffuseTexId);
 			glDrawArrays(shape.primitive, 0, shape.vertexCount);
 		};
 	}
@@ -90,4 +93,5 @@ package void setDefaultUniforms(in Mesh mesh, Shader shader) {
 	shader.setMaterialUniforms(mesh.material);
 	shader.uniforms["model"] = model;
 	shader.uniforms["depthMap"] = 0;
+	shader.uniforms["diffuseTex"] = 1;
 }

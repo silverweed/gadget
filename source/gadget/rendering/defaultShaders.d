@@ -56,13 +56,13 @@ enum f_addDirLight = q{
 
 /// Instanced version
 enum fi_addAmbientLight = q{
-	vec3 addAmbientLight(in AmbientLight light) {
-		return light.strength * light.color * fs_in.material.diffuse;
+	vec3 addAmbientLight(in AmbientLight light, in vec3 objDiffuse) {
+		return light.strength * light.color * objDiffuse;
 	}
 };
 
 enum fi_addPointLight = q{
-	vec3 addPointLight(in PointLight light) {
+	vec3 addPointLight(in PointLight light, in vec3 objDiffuse) {
 		// diffuse
 		vec3 norm = normalize(fs_in.normal);
 		vec3 fragToLight = light.position - fs_in.fragPos;
@@ -76,7 +76,7 @@ enum fi_addPointLight = q{
 		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
 		vec3 specular = fs_in.material.shininess * spec * light.diffuse;
 
-		vec3 result = diffuse * fs_in.material.diffuse + specular * fs_in.material.specular;
+		vec3 result = diffuse * objDiffuse + specular * fs_in.material.specular;
 		
 		// attenuation
 		float dist = length(fragToLight);
@@ -87,7 +87,7 @@ enum fi_addPointLight = q{
 };
 
 enum fi_addDirLight = q{
-	vec3 addDirLight(in DirLight light) {
+	vec3 addDirLight(in DirLight light, in vec3 objDiffuse) {
 		// diffuse
 		vec3 norm = normalize(fs_in.normal);
 		vec3 lightDir = normalize(-light.direction);
@@ -100,7 +100,7 @@ enum fi_addDirLight = q{
 		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
 		vec3 specular = fs_in.material.shininess * spec * light.diffuse;
 
-		vec3 result = diffuse * fs_in.material.diffuse + specular * fs_in.material.specular;
+		vec3 result = diffuse * objDiffuse + specular * fs_in.material.specular;
 		
 		return result;
 	}
@@ -168,9 +168,8 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 	// location = 4 aInstanceModel
 	// location = 5 aInstanceModel
 	// location = 6 aInstanceModel
-	layout (location = 7) in vec3 aDiffuse;
-	layout (location = 8) in vec3 aSpecular;
-	layout (location = 9) in float aShininess;
+	layout (location = 7) in vec3 aSpecular;
+	layout (location = 8) in float aShininess;
 
 	uniform mat4 vp;
 	uniform mat4 lightVP;
@@ -187,7 +186,6 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 		vs_out.fragPos = vec3(aInstanceModel * vec4(aPos, 1.0));
 		vs_out.normal = mat3(transpose(inverse(aInstanceModel))) * aNormal;
 		vs_out.texCoord = aTexCoord;
-		vs_out.material.diffuse = aDiffuse;
 		vs_out.material.specular = aSpecular;
 		vs_out.material.shininess = aShininess;
 		vs_out.lightSpaceFragPos = lightVP * vec4(vs_out.fragPos, 1.0);
@@ -243,20 +241,22 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 	uniform AmbientLight ambientLight;
 
 	uniform sampler2D depthMap;
-	//uniform sampler2D diffuseTex;
+	uniform sampler2D diffuseTex;
 
 } ~ fi_addAmbientLight ~ fi_addPointLight ~ fi_addDirLight ~ f_calcShadow ~ q{
 
 	void main() {
+		vec3 objDiffuse = texture(diffuseTex, fs_in.texCoord).rgb;
 		vec3 result = vec3(0.0);
 		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
-			result += addPointLight(pointLight[i]);
-		result += addDirLight(dirLight);
+			result += addPointLight(pointLight[i], objDiffuse);
+		result += addDirLight(dirLight, objDiffuse);
 
 		float shadow = calcShadow(fs_in.lightSpaceFragPos);
-		result = result * (1.0 - shadow) + addAmbientLight(ambientLight);
+		result = result * (1.0 - shadow) + addAmbientLight(ambientLight, objDiffuse);
 
 		fragColor = vec4(result, 1.0);
+		//fragColor = vec4(fs_in.texCoord.x, fs_in.texCoord.y, 0, 1.0);
 
 		float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
 		brightColor = vec4(float(brightness > 1.0) * fragColor.rgb, 1.0);

@@ -145,8 +145,10 @@ void render(World world, in Camera camera, uint target = 0) {
 	glEnable(GL_DEPTH_TEST);
 
 	// Bind all textures
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, world.depthMaps[0].texture);
+	if (world.depthMaps.length > 0) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, world.depthMaps[0].texture);
+	}
 
 	world.setCamera(camera);
 	world.drawWorld();

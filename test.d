@@ -38,7 +38,7 @@ void main(string[] args) {
 
 	auto world = new World();
 	world.enableShadows(SHAD_WIDTH, SHAD_HEIGHT);
-	world.enablePostProcessing();
+	//world.enablePostProcessing();
 
 	auto camera = new Camera();
 	camera.position.y = 2;
@@ -103,7 +103,7 @@ void main(string[] args) {
 		world.renderDepthMaps();
 
 		// Second pass: render scene to quad using generated depth map
-		world.renderToInternalTex(camera);
+		//world.renderToInternalTex(camera);
 
 		// [Insert post processing passes here]
 		//gaussBlur(blurShader, blurTex, world);
@@ -123,7 +123,8 @@ void main(string[] args) {
 		//drawArrays(world.renderTex.quadVao, quadVertices.length);
 
 		// Final pass: render quad to screen
-		world.renderQuad();
+		//world.renderQuad();
+		world.render(camera);
 
 		updateMouse(window, camera);
 		if (clock.isRunning())
@@ -192,6 +193,7 @@ int cubeModelsVbo;
 
 auto createCubes(uint n) {
 	auto cubes = new Batch(genCube(), cubeVertices.length, presetShaders["defaultInstanced"]);
+	cubes.diffuseTexId = genTexture("textures/box.jpg");
 	cubes.cullFace = true;
 	cubeModels = new mat4[n];
 	auto cubeDiffuse = new vec3[cubeModels.length];
@@ -220,7 +222,7 @@ auto createCubes(uint n) {
 	cubeShininess[0] = 1;
 	cubes.nInstances = cast(uint)cubeModels.length;
 	cubeModelsVbo = cubes.setData("aInstanceModel", cubeModels, GL_STREAM_DRAW); // this data will be updated every frame
-	cubes.setData("aDiffuse", cubeDiffuse);
+	//cubes.setData("aDiffuse", cubeDiffuse);
 	cubes.setData("aSpecular", cubeSpecular);
 	cubes.setData("aShininess", cubeShininess);
 	return cubes;
@@ -281,12 +283,14 @@ void moveCubes(Batch cubes, float dt) {
 
 auto createGround() {
 	auto ground = new Batch(genQuad(), quadVertices.length, presetShaders["defaultInstanced"]);
+	auto groundTex = genTexture("textures/ground.jpg");
+	ground.diffuseTexId = groundTex;
 	ground.cullFace = false;
 	ground.nInstances = 1;
 	ground.setData("aInstanceModel", [
 		mat4.identity.scale(100, 100, 100).rotate(PI / 2, vec3(1, 0, 0)).translate(0, -0.5, 0).transposed()
 	]);
-	ground.setData("aDiffuse", [ vec3(0.4, 0.2, 0) ]);
+	//ground.setData("aDiffuse", [ vec3(0.4, 0.2, 0) ]);
 	ground.setData("aSpecular", [ vec3(0.02, 0.01, 0) ]);
 	ground.setData("aShininess", [ 0.3 ]);
 	return ground;

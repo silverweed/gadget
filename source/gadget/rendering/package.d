@@ -12,5 +12,6 @@ public import gadget.rendering.gl,
               gadget.rendering.world,
               gadget.rendering.shadows,
               gadget.rendering.rendertexture,
+              gadget.rendering.texture,
               gadget.rendering.defaultShaders,
               gadget.rendering.batch;
