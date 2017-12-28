@@ -46,7 +46,7 @@ private class PresetShaderCache {
 
 __gshared auto presetShaders = new PresetShaderCache();
 
-auto makePreset(ShapeType type, vec3 color = vec3(uniform01(), uniform01(), uniform01())) {
+auto makePreset(ShapeType type) {
 	GLuint function() genFunc;
 	GLuint count;
 	GLenum prim = GL_TRIANGLES;
@@ -68,6 +68,5 @@ auto makePreset(ShapeType type, vec3 color = vec3(uniform01(), uniform01(), unif
 
 	auto shape = new Mesh(genFunc(), count, presetShaders["default"]);
 	shape.primitive = prim;
-	shape.material.diffuse = color;
 	return shape;
 }

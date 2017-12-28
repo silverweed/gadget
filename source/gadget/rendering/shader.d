@@ -19,6 +19,8 @@ alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, v
 
 class Shader {
 	const string name;
+	
+	debug string codestr;
 
 	Uniform[string] uniforms;
 
@@ -45,20 +47,31 @@ class Shader {
 	this(string vsCode, string fsCode, string gsCode = null, string name = "") {
 		this.name = name;
 
+		debug {
+			auto l = 0;
+			foreach (c; [vsCode, fsCode, gsCode]) {
+				if (c == null) continue;
+				auto lines = c.split("\n");
+				foreach (line; lines)
+					codestr ~= format("%d %s\n", l++, line);
+				codestr ~= ("----------------\n");
+			}
+		}
+
 		// Compile the shaders
 		debug writefln("[%s] compiling vertex shader", name);
 		const vsId = glCreateShader(GL_VERTEX_SHADER);
 		const char* vsCodePtr = vsCode.toStringz();
 		glShaderSource(vsId, 1, &vsCodePtr, null);
 		glCompileShader(vsId);
-		checkErr!"Vertex"(vsId, vsCode);
+		checkErr!"Vertex"(this, vsId);
 
 		debug writefln("[%s] compiling fragment shader", name);
 		const fsId = glCreateShader(GL_FRAGMENT_SHADER);
 		const char* fsCodePtr = fsCode.toStringz();
 		glShaderSource(fsId, 1, &fsCodePtr, null);
 		glCompileShader(fsId);
-		checkErr!"Fragment"(fsId, fsCode);
+		checkErr!"Fragment"(this, fsId);
 
 		GLint gsId = -1;
 		if (gsCode != null) {
@@ -67,7 +80,7 @@ class Shader {
 			const char* gsCodePtr = gsCode.toStringz();
 			glShaderSource(gsId, 1, &gsCodePtr, null);
 			glCompileShader(gsId);
-			checkErr!"Geometry"(gsId, gsCode);
+			checkErr!"Geometry"(this, gsId);
 		}
 		_id = glCreateProgram();
 		glAttachShader(_id, vsId);
@@ -76,7 +89,7 @@ class Shader {
 			glAttachShader(_id, gsId);
 		debug writefln("[%s] linking shader", name);
 		glLinkProgram(_id);
-		checkErr!"Program"(_id, vsCode, fsCode, gsCode);
+		checkErr!"Program"(this, _id);
 		// Cleanup
 		glDeleteShader(vsId);
 		glDeleteShader(fsId);
@@ -237,7 +250,7 @@ void setMaterialUniforms(Shader shader, in Material material) {
 	shader.uniforms["material.shininess"] = material.shininess;
 }
 
-private void checkErr(string type, A...)(uint _id, A codes) {
+private void checkErr(string type)(in Shader shader, uint _id) {
 	int success = 0;
 	char[1024] infoLog;
 	static if (type != "Program") {
@@ -246,13 +259,7 @@ private void checkErr(string type, A...)(uint _id, A codes) {
 			glGetShaderInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
 			stderr.writeln("[ ERR ] ", type, " Shader failed to compile: ", infoLog);
 			stderr.writeln("  Shader code looks like this:");
-			auto l = 0;
-			foreach (c; codes) {
-				auto lines = c.split("\n");
-				foreach (line; lines)
-					stderr.writefln("%d %s", l++, line);
-				stderr.writeln("----------------");
-			}
+			stderr.writeln(shader.codestr);
 		}
 	} else {
 		glGetProgramiv(_id, GL_LINK_STATUS, &success);
@@ -260,13 +267,7 @@ private void checkErr(string type, A...)(uint _id, A codes) {
 			glGetProgramInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
 			stderr.writeln("[ ERR ] Shader failed to link: ", infoLog);
 			stderr.writeln("  Shader code looks like this:");
-			auto l = 0;
-			foreach (c; codes) {
-				auto lines = c.split("\n");
-				foreach (line; lines)
-					stderr.writefln("%d %s", l++, line);
-				stderr.writeln("----------------");
-			}
+			stderr.writeln(shader.codestr);
 		}
 	}
 }

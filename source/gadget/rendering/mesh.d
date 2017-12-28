@@ -21,7 +21,6 @@ struct Transform {
 class Mesh {
 	Transform transform;
 	Material material;
-	uint diffuseTexId;
 	Shader shader;
 	GLenum primitive = GL_TRIANGLES;
 	GLuint vao;
@@ -31,13 +30,10 @@ class Mesh {
 	this(GLuint vao, GLuint count, Shader shader) {
 		this.vao = vao;
 		this.shader = shader;
+		material.shininess = 0;
 		vertexCount = count;
-		material.diffuse = vec3(0, 0, 0);
-		material.specular = vec3(1, 1, 1);
-		material.shininess = 0.5;
 		drawFunc = (in Mesh shape) {
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, shape.diffuseTexId);
+			shape.setTextures();
 			glDrawArrays(shape.primitive, 0, shape.vertexCount);
 		};
 	}
@@ -47,10 +43,8 @@ protected:
 
 	invariant {
 		import std.algorithm;
-		assert(transform.rotation.magnitude_squared().approxEqual(1, float.epsilon));
-		assert(material.diffuse.isFinite);
-		assert(material.specular.isFinite);
-		assert(!material.shininess.isNaN);
+		assert(transform.rotation.magnitude_squared().approxEqual(1, float.epsilon), "rotation magnitude is not 1!");
+		assert(!material.shininess.isNaN, "material shininess is NaN!");
 	}
 }
 
@@ -84,6 +78,13 @@ void setCameraUniforms(Mesh mesh, Shader shader, in Camera camera) {
 	shader.uniforms["mvp"] = vp * model;
 }
 
+void setTextures(in Mesh mesh) {
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, mesh.material.diffuse);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, mesh.material.specular);
+}
+
 package void setDefaultUniforms(in Mesh mesh, Shader shader) {
 	const t = mesh.transform;
 	const model = mat4.identity
@@ -93,5 +94,6 @@ package void setDefaultUniforms(in Mesh mesh, Shader shader) {
 	shader.setMaterialUniforms(mesh.material);
 	shader.uniforms["model"] = model;
 	shader.uniforms["depthMap"] = 0;
-	shader.uniforms["diffuseTex"] = 1;
+	shader.uniforms["material.diffuse"] = 1;
+	shader.uniforms["material.specular"] = 2;
 }

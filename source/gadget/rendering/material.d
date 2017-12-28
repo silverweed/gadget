@@ -3,10 +3,12 @@ module gadget.rendering.material;
 import std.conv: to;
 import gl3n.linalg;
 
+alias sampler2D = int;
+
 enum GenMaterial = q{
 	struct Material {
-		vec3 diffuse;
-		vec3 specular;
+		sampler2D diffuse;
+		sampler2D specular;
 		float shininess;
 	};
 };

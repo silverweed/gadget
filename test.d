@@ -26,7 +26,7 @@ Chronometer clock;
 
 void main(string[] args) {
 
-	enum nLights = 1;
+	enum nLights = 10;
 
 	auto nCubes = 3;
 	if (args.length > 1)
@@ -38,10 +38,12 @@ void main(string[] args) {
 
 	auto world = new World();
 	world.enableShadows(SHAD_WIDTH, SHAD_HEIGHT);
-	//world.enablePostProcessing();
+	world.enablePostProcessing();
 
 	auto camera = new Camera();
 	camera.position.y = 2;
+
+	RenderState.global.clearColor = vec4(0.01, 0.0, 0.09, 1.0);
 
 	Mesh[] points;
 	auto cubes = createCubes(nCubes);
@@ -66,14 +68,9 @@ void main(string[] args) {
 			color,
 			0.03,          // attenuation
 		);
-		auto point = new Mesh(genPoint(), 1, presetShaders["billboardQuad"]);
-		point.material.diffuse = vec3(color.r, color.g, color.b);
-		point.primitive = GL_POINTS;
-		points ~= point;
-		world.objects ~= point;
 	}
-
-	RenderState.global.clearColor = vec4(0.01, 0.0, 0.09, 1.0);
+	auto lightGizmos = createLightGizmos(world);
+	world.objects ~= lightGizmos;
 
 	camera.position.z = 4;
 	camera.moveSpeed = 12f;
@@ -96,14 +93,15 @@ void main(string[] args) {
 
 		//moveCubes(cubes, deltaTime);
 
-		moveLights(world, points, t);
+		moveLights(world, t);
+		updateLightGizmos(world, lightGizmos);
 		world.dirLight.direction = -world.pointLights[0].position;
 
 		// First pass: render scene to depth map
 		world.renderDepthMaps();
 
 		// Second pass: render scene to quad using generated depth map
-		//world.renderToInternalTex(camera);
+		world.renderToInternalTex(camera);
 
 		// [Insert post processing passes here]
 		//gaussBlur(blurShader, blurTex, world);
@@ -123,8 +121,8 @@ void main(string[] args) {
 		//drawArrays(world.renderTex.quadVao, quadVertices.length);
 
 		// Final pass: render quad to screen
-		//world.renderQuad();
-		world.render(camera);
+		world.renderQuad();
+		//world.render(camera);
 
 		updateMouse(window, camera);
 		if (clock.isRunning())
@@ -193,12 +191,14 @@ int cubeModelsVbo;
 
 auto createCubes(uint n) {
 	auto cubes = new Batch(genCube(), cubeVertices.length, presetShaders["defaultInstanced"]);
-	cubes.diffuseTexId = genTexture("textures/box.jpg");
+	cubes.material.diffuse = genTexture("textures/box.jpg");
+	cubes.material.specular = genTexture("textures/box_specular.jpg");
+	cubes.material.shininess = 16;
 	cubes.cullFace = true;
 	cubeModels = new mat4[n];
-	auto cubeDiffuse = new vec3[cubeModels.length];
-	auto cubeSpecular = new vec3[cubeModels.length];
-	auto cubeShininess = new float[cubeModels.length];
+	//auto cubeDiffuse = new vec3[cubeModels.length];
+	//auto cubeSpecular = new vec3[cubeModels.length];
+	//auto cubeShininess = new float[cubeModels.length];
 	for (int i = 0; i < cubeModels.length; ++i) {
 		auto pos = vec3(uniform(-30, 30), uniform(-30, 30), uniform(-30, 30));
 		auto rot = quat.euler_rotation(uniform(-PI, PI), uniform(-PI, PI), uniform(-PI, PI));
@@ -209,36 +209,24 @@ auto createCubes(uint n) {
 					.rotate(rot.alpha, rot.axis)
 					.scale(scale.x, scale.y, scale.z)
 					.transposed(); // !!!
-		cubeDiffuse[i] = vec3(uniform01(), uniform01(), uniform01());
-		cubeSpecular[i] = vec3(uniform01(), uniform01(), uniform01());
-		cubeShininess[i] = uniform(0, 10);
+		//cubeDiffuse[i] = vec3(uniform01(), uniform01(), uniform01());
+		//cubeSpecular[i] = vec3(uniform01(), uniform01(), uniform01());
+		//cubeShininess[i] = uniform(0, 10);
 	}
 	// Put first cube in origin, for convenience
 	cubeModels[0] = mat4.identity.rotate(PI/4, vec3(1, 0, 0)).transposed();
 	cubeModels[1] = mat4.identity.translate(0, 2, 0).rotate(0.0, vec3(1, 0, 0)).transposed();
 	cubeModels[2] = mat4.identity.translate(0, 0.5, 2).rotate(0.0, vec3(0, 1, 0)).transposed();
-	cubeShininess[2] = 10000;
-	cubeShininess[1] = 100;
-	cubeShininess[0] = 1;
 	cubes.nInstances = cast(uint)cubeModels.length;
 	cubeModelsVbo = cubes.setData("aInstanceModel", cubeModels, GL_STREAM_DRAW); // this data will be updated every frame
-	//cubes.setData("aDiffuse", cubeDiffuse);
-	cubes.setData("aSpecular", cubeSpecular);
-	cubes.setData("aShininess", cubeShininess);
 	return cubes;
 }
 
-void moveLights(World world, Mesh[] points, float t) {
-	for (int i = 0; i < points.length; ++i) {
+void moveLights(World world, float t) {
+	for (int i = 0; i < world.pointLights.length; ++i) {
 		auto lightPos = vec3(5 * (i+1) * sin(t + i * 0.7),
 				3f + 2f * (i+1) * sin(t / 5 + i * 0.7),
 				7 * (i+1) * cos(t + i * 0.7));
-		// Update light gizmo
-		points[i].shader.uniforms["radius"] = 0.8;
-		points[i].shader.uniforms["scrWidth"] = RenderState.global.screenSize.x;
-		points[i].shader.uniforms["scrHeight"] = RenderState.global.screenSize.y;
-		points[i].transform.position = lightPos;
-
 		world.pointLights[i].position = lightPos;
 	}
 }
@@ -283,16 +271,14 @@ void moveCubes(Batch cubes, float dt) {
 
 auto createGround() {
 	auto ground = new Batch(genQuad(), quadVertices.length, presetShaders["defaultInstanced"]);
-	auto groundTex = genTexture("textures/ground.jpg");
-	ground.diffuseTexId = groundTex;
+	ground.material.diffuse = genTexture("textures/ground.jpg");
+	ground.material.specular = genTexture("textures/ground_specular.jpg");
+	ground.material.shininess = 0;
 	ground.cullFace = false;
 	ground.nInstances = 1;
 	ground.setData("aInstanceModel", [
 		mat4.identity.scale(100, 100, 100).rotate(PI / 2, vec3(1, 0, 0)).translate(0, -0.5, 0).transposed()
 	]);
-	//ground.setData("aDiffuse", [ vec3(0.4, 0.2, 0) ]);
-	ground.setData("aSpecular", [ vec3(0.02, 0.01, 0) ]);
-	ground.setData("aShininess", [ 0.3 ]);
 	return ground;
 }
 
@@ -318,4 +304,44 @@ void gaussBlur(Shader blurShader, RenderTexture[] blurTex, World world) {
 			first_iteration = false;
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+auto createLightGizmos(in World world) {
+	auto points = new Batch(genPoint(), 1, presetShaders["billboardQuad"]);
+	points.primitive = GL_POINTS;
+	points.nInstances = cast(uint)world.pointLights.length;
+	auto colors = new vec3[points.nInstances];
+	foreach (i, pl; world.pointLights) {
+		colors[i] = pl.diffuse;
+	}
+	points.setData("aColor", colors);
+	updateLightGizmos(world, points);
+
+	return points;
+}
+
+void updateLightGizmos(in World world, Batch points) {
+	static uint lightGizmosPosVbo;
+	static bool firstTime = true;
+
+	auto pos = new mat4[points.nInstances];
+	foreach (i, pl; world.pointLights)
+		pos[i] = mat4.identity.translate(pl.position.x, pl.position.y, pl.position.z).transposed();
+
+	if (firstTime) {
+		lightGizmosPosVbo = points.setData("aInstanceModel", pos, GL_STREAM_DRAW);
+		firstTime = false;
+	} else {
+		const bufsize = mat4.sizeof * (pos.length + 1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, lightGizmosPosVbo);
+		// Realloc the buffer to orphan it
+		glBufferData(GL_ARRAY_BUFFER, bufsize, NULL, GL_STREAM_DRAW);
+		
+		// Update the data
+		glBufferSubData(GL_ARRAY_BUFFER, 0, bufsize, pos.ptr);
+	}
+	points.shader.uniforms["radius"] = 0.8;
+	points.shader.uniforms["scrWidth"] = RenderState.global.screenSize.x;
+	points.shader.uniforms["scrHeight"] = RenderState.global.screenSize.y;
 }

@@ -18,23 +18,23 @@ class Batch : Mesh {
 	this(GLuint vao, GLuint count, Shader shader) {
 		super(vao, count, shader);
 		drawFunc = (in Mesh shape) {
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, shape.diffuseTexId);
+			shape.setTextures();
 			glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
 					(cast(Batch)shape).nInstances);
 		};
 	}
 }
 
-auto setData(T)(Batch batch, string name, T[] data, GLenum usage = GL_STATIC_DRAW) {
+auto setData(T)(Batch batch, string name, T[] data, GLenum usage = GL_STATIC_DRAW, int loc = -1) {
 	GLuint iVbo;
 	glGenBuffers(1, &iVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, iVbo);
 	// FIXME: we allocate 1 extra space or last element of `data` will be ignored. Not sure why though.
 	glBufferData(GL_ARRAY_BUFFER, T.sizeof * (data.length + 1), data.ptr, usage);
 
-	const loc = glGetAttribLocation(batch.shader.id, name.toStringz());
-	assert(loc >= 0, "Found no attribute " ~ name ~ " for shader " ~ batch.shader.name);
+	if (loc < 0)
+		loc = glGetAttribLocation(batch.shader.id, name.toStringz());
+	assert(loc >= 0, "Found no attribute " ~ name ~ " for shader " ~ batch.shader.name ~ "\n" ~ batch.shader.codestr);
 	const sz = min(4, T.sizeof);
 
 	glBindVertexArray(batch.vao);
