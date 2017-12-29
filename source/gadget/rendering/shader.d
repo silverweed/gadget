@@ -126,7 +126,7 @@ private:
 		void fillDeclaredUniforms(string code) {
 			import std.regex : ctRegex, matchFirst;
 			enum basicTypes = ["vec2", "vec3", "vec4", "mat2", "mat3", "mat4", "float",
-					"int", "uint", "bool", "double", "sampler2D"];
+					"int", "uint", "bool", "double", "sampler2D", "samplerCube"];
 			const addu = function(string[] declaredUniforms, string ident) {
 				if (!declaredUniforms.canFind(ident))
 					declaredUniforms ~= ident;

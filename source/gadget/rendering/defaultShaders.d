@@ -371,3 +371,31 @@ enum fs_viewDepth = MATERIAL_HEADER ~ q{
 		fragColor = vec4(vec3(depthVal), 1.0);
 	}
 };
+
+enum vs_skybox = MATERIAL_HEADER ~ q{
+	
+	layout (location = 0) in vec3 aPos;
+
+	out vec3 texCoords;
+
+	uniform mat4 vp;
+
+	void main() {
+		texCoords = aPos;
+		vec4 pos = vp * vec4(aPos, 1.0);
+		gl_Position = pos.xyww; // make z always be max (1.0)
+	}
+};
+
+enum fs_skybox = MATERIAL_HEADER ~ q{
+	
+	out vec4 fragColor;
+
+	in vec3 texCoords;
+
+	uniform samplerCube skybox;
+
+	void main() {
+		fragColor = texture(skybox, texCoords);
+	}
+};

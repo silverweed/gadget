@@ -8,6 +8,7 @@ import derelict.opengl;
 import gl3n.linalg;
 import gadget.rendering.gl;
 import gadget.rendering.material;
+import gadget.rendering.texture;
 import gadget.rendering.rendertexture;
 import gadget.rendering.presets;
 import gadget.rendering.shapes;
@@ -18,6 +19,8 @@ import gadget.rendering.mesh;
 import gadget.rendering.shadows;
 
 class World {
+	Skybox skybox;
+
 	/// Objects
 	Mesh[] objects;
 
@@ -47,11 +50,29 @@ void drawWorld(World world, Shader shader = null) {
 
 		obj.draw(sh);
 	}
+
+	if (world.skybox.shader !is null) {
+		int depthMode;
+		glGetIntegerv(GL_DEPTH_FUNC, &depthMode);
+		glDepthFunc(GL_LEQUAL);
+		auto sh = world.skybox.shader;
+		sh.use();
+		sh.applyUniforms();
+		glBindVertexArray(world.skybox.cubeVao);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, world.skybox.cubemapVao);
+		drawElements(world.skybox.cubeVao, cubeIndices.length);
+		glDepthFunc(depthMode);
+	}
 }
 
 void setCamera(World world, in Camera camera, Shader shader = null) {
 	foreach (obj; world.objects) {
 		obj.setCameraUniforms((shader is null) ? obj.shader : shader, camera);
+	}
+	if (world.skybox.shader !is null) {
+		auto sh = world.skybox.shader;
+		sh.uniforms["vp"] = camera.projMatrix * mat4(mat3(camera.viewMatrix));
 	}
 }
 
@@ -152,4 +173,22 @@ void render(World world, in Camera camera, uint target = 0) {
 
 	world.setCamera(camera);
 	world.drawWorld();
+}
+
+struct Skybox {
+	Shader shader;
+	uint cubeVao;
+	uint cubemapVao;
+}
+
+void loadSkybox(World world, string[] textures) {
+	// TODO unload current skybox
+	assert(world.skybox.shader is null, "Skybox already loaded!");
+
+	world.skybox = Skybox(
+		presetShaders["skybox"],
+		genCube(),
+		genCubemap(textures)
+	);
+	world.skybox.shader.uniforms["skybox"] = 0;
 }

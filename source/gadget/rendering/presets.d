@@ -36,6 +36,9 @@ private class PresetShaderCache {
 		case "screenQuad":
 			shader = new Shader(vs_screenQuad, fs_screenQuad, null, name);
 			break;
+		case "skybox":
+			shader = new Shader(vs_skybox, fs_skybox, null, name);
+			break;
 		default: assert(0, "Invalid preset shader: " ~ name);
 		}
 		return cache[name] = shader;

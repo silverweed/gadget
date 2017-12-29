@@ -87,6 +87,8 @@ void setCameraUniforms(Mesh mesh, Shader shader, in Camera camera) {
 	shader.uniforms["mvp"] = vp * model;
 }
 
+private:
+
 void setTextures(in Mesh mesh) {
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, mesh.material.diffuse);
@@ -94,7 +96,7 @@ void setTextures(in Mesh mesh) {
 	glBindTexture(GL_TEXTURE_2D, mesh.material.specular);
 }
 
-package void setDefaultUniforms(in Mesh mesh, Shader shader) {
+void setDefaultUniforms(in Mesh mesh, Shader shader) {
 	const t = mesh.transform;
 	const model = mat4.identity
 			.scale(t.scale.x, t.scale.y, t.scale.z)
