@@ -25,17 +25,24 @@ class Mesh {
 	GLenum primitive = GL_TRIANGLES;
 	GLuint vao;
 	GLuint vertexCount;
-	bool cullFace = false;
+	GLuint indexCount;
+	bool cullFace;
 
-	this(GLuint vao, GLuint count, Shader shader) {
+	this(GLuint vao, GLuint count, Shader shader, bool isIndexed = false) {
 		this.vao = vao;
 		this.shader = shader;
 		material.shininess = 0;
-		vertexCount = count;
-		drawFunc = (in Mesh shape) {
-			shape.setTextures();
-			glDrawArrays(shape.primitive, 0, shape.vertexCount);
-		};
+		if (isIndexed) {
+			indexCount = count;
+			drawFunc = (in Mesh shape) {
+				glDrawElements(shape.primitive, shape.indexCount, GL_UNSIGNED_INT, NULL);
+			};
+		} else {
+			vertexCount = count;
+			drawFunc = (in Mesh shape) {
+				glDrawArrays(shape.primitive, 0, shape.vertexCount);
+			};
+		}
 	}
 
 protected:
@@ -55,6 +62,8 @@ void draw(in Mesh mesh, Shader shader) {
 	mesh.setDefaultUniforms(shader);
 	shader.applyUniforms();
 	debug shader.assertAllUniformsDefined();
+
+	mesh.setTextures();
 
 	auto wasCullEnabled = glIsEnabled(GL_CULL_FACE);
 	cull(mesh.cullFace);

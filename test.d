@@ -26,7 +26,7 @@ Chronometer clock;
 
 void main(string[] args) {
 
-	enum nLights = 10;
+	enum nLights = 5;
 
 	auto nCubes = 3;
 	if (args.length > 1)
@@ -190,7 +190,7 @@ mat4[] cubeModels;
 int cubeModelsVbo;
 
 auto createCubes(uint n) {
-	auto cubes = new Batch(genCube(), cubeVertices.length, presetShaders["defaultInstanced"]);
+	auto cubes = makePreset(ShapeType.CUBE);
 	cubes.material.diffuse = genTexture("textures/box.jpg");
 	cubes.material.specular = genTexture("textures/box_specular.jpg");
 	cubes.material.shininess = 16;
@@ -270,7 +270,7 @@ void moveCubes(Batch cubes, float dt) {
 }
 
 auto createGround() {
-	auto ground = new Batch(genQuad(), quadVertices.length, presetShaders["defaultInstanced"]);
+	auto ground = makePreset(ShapeType.QUAD);
 	ground.material.diffuse = genTexture("textures/ground.jpg");
 	ground.material.specular = genTexture("textures/ground_specular.jpg");
 	ground.material.shininess = 0;
@@ -282,6 +282,7 @@ auto createGround() {
 	return ground;
 }
 
+@disable
 void gaussBlur(Shader blurShader, RenderTexture[] blurTex, World world) {
 	bool horizontal = true, first_iteration = true;
 	enum amount = 8;
@@ -297,7 +298,7 @@ void gaussBlur(Shader blurShader, RenderTexture[] blurTex, World world) {
 		);
 		debug blurShader.assertAllUniformsDefined();
 		blurShader.applyUniforms();
-		drawArrays(blurTex[horizontal].quadVao, quadVertices.length);
+		//drawArrays(blurTex[horizontal].quadVao, quadVertices.length);
 		//world.renderQuad(blurTex[horizontal].quadVao);
 		horizontal = !horizontal;
 		if (first_iteration)
@@ -307,7 +308,7 @@ void gaussBlur(Shader blurShader, RenderTexture[] blurTex, World world) {
 }
 
 auto createLightGizmos(in World world) {
-	auto points = new Batch(genPoint(), 1, presetShaders["billboardQuad"]);
+	auto points = makePreset(ShapeType.POINT, presetShaders["billboardQuad"]);
 	points.primitive = GL_POINTS;
 	points.nInstances = cast(uint)world.pointLights.length;
 	auto colors = new vec3[points.nInstances];

@@ -129,7 +129,7 @@ void renderQuad(World world, uint target = 0) {
 	glBindTexture(GL_TEXTURE_2D, world.renderTex.colorBufs[0]);
 	debug screenQuadShader.assertAllUniformsDefined();
 	screenQuadShader.applyUniforms();
-	drawArrays(world.renderTex.quadVao, quadVertices.length);
+	drawElements(world.renderTex.quadVao, screenQuadIndices.length);
 }
 
 void render(World world, in Camera camera, uint target = 0) {

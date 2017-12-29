@@ -20,7 +20,8 @@ immutable Vertex[1] pointVertices = [
 	{ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0] }
 ];
 
-immutable Vertex[12] quadVertices = [
+/*
+immutable Vertex[6] quadVertices = [
 	{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [1f, 1f] },
 	{ [-0.5f,  0.5f, 0f], [0f, 0f, 1f], [0f, 1f] },
 	{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
@@ -28,7 +29,20 @@ immutable Vertex[12] quadVertices = [
 	{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
 	{ [ 0.5f, -0.5f, 0f], [0f, 0f, 1f], [1f, 0f] },
 ];
+*/
 
+immutable Vertex[4] quadElements = [
+	{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [1f, 1f] },
+	{ [-0.5f,  0.5f, 0f], [0f, 0f, 1f], [0f, 1f] },
+	{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
+	{ [ 0.5f, -0.5f, 0f], [0f, 0f, 1f], [1f, 0f] },
+];
+
+immutable uint[6] quadIndices = [
+	0, 1, 2, 0, 2, 3
+];
+
+/*
 immutable Vertex[36] cubeVertices = [
 	// positions              // normals             // texture coords
 	{ [-0.5f, -0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [0.0f, 0.0f] },
@@ -73,10 +87,49 @@ immutable Vertex[36] cubeVertices = [
 	{ [ 0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [1.0f, 0.0f] },
 	{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 1.0f] }
 ];
+*/
+
+immutable Vertex[25] cubeElements = [
+	// positions              // normals             // texture coords
+	{ [-0.5f, -0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [0.0f, 0.0f] },
+	{ [ 0.5f,  0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [1.0f, 1.0f] },
+	{ [ 0.5f, -0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [1.0f, 0.0f] },
+	{ [-0.5f,  0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [0.0f, 1.0f] },
+	{ [-0.5f, -0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [0.0f, 0.0f] },
+	{ [ 0.5f, -0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [1.0f, 0.0f] },
+	{ [ 0.5f,  0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [1.0f, 1.0f] },
+	{ [-0.5f,  0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [0.0f, 1.0f] },
+	{ [-0.5f,  0.5f,  0.5f],  [-1.0f,  0.0f, 0.0f],  [1.0f, 0.0f] },
+	{ [-0.5f,  0.5f, -0.5f],  [-1.0f,  0.0f, 0.0f],  [1.0f, 1.0f] },
+	{ [-0.5f, -0.5f, -0.5f],  [-1.0f,  0.0f, 0.0f],  [0.0f, 1.0f] },
+	{ [-0.5f, -0.5f,  0.5f],  [-1.0f,  0.0f, 0.0f],  [0.0f, 0.0f] },
+	{ [ 0.5f,  0.5f,  0.5f],  [1.0f,  0.0f,  0.0f],  [1.0f, 0.0f] },
+	{ [ 0.5f, -0.5f, -0.5f],  [1.0f,  0.0f,  0.0f],  [0.0f, 1.0f] },
+	{ [ 0.5f,  0.5f, -0.5f],  [1.0f,  0.0f,  0.0f],  [1.0f, 1.0f] },
+	{ [ 0.5f, -0.5f,  0.5f],  [1.0f,  0.0f,  0.0f],  [0.0f, 0.0f] },
+	{ [-0.5f, -0.5f, -0.5f],  [0.0f, -1.0f,  0.0f],  [0.0f, 1.0f] },
+	{ [ 0.5f, -0.5f, -0.5f],  [0.0f, -1.0f,  0.0f],  [1.0f, 1.0f] },
+	{ [ 0.5f, -0.5f,  0.5f],  [0.0f, -1.0f,  0.0f],  [1.0f, 0.0f] },
+	{ [-0.5f, -0.5f,  0.5f],  [0.0f, -1.0f,  0.0f],  [0.0f, 0.0f] },
+	{ [ 0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [1.0f, 1.0f] },
+	{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 1.0f] },
+	{ [ 0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [1.0f, 0.0f] },
+	{ [-0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 0.0f] },
+	{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 1.0f] }
+];
+
+immutable uint[36] cubeIndices = [
+	0,  1,  2,  1,  0,  3,
+	4,  5,  6,  6,  7,  4,
+	8,  9,  10, 10, 11, 8,
+	12, 13, 14, 13, 12, 15,
+	16, 17, 18, 18, 19, 16,
+	20, 21, 22, 23, 22, 24,
+];
 
 // Configures a vertex array object to contain a shape. Returns the vao index.
 // This shape is meant to be used with glDrawElements.
-@disable // since we don't use indexed drawing yet
+//@disable // since we don't use indexed drawing yet
 auto genShapeElem(alias vertices, alias indices)() {
 	uint vbo, vao, ebo;
 
@@ -87,18 +140,22 @@ auto genShapeElem(alias vertices, alias indices)() {
 	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	debug writeln("vertices: ", vertices.length / 3);
 	glBufferData(GL_ARRAY_BUFFER, vertices.sizeof, &vertices, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.sizeof, &indices, GL_STATIC_DRAW);
 
-	// Bind vertex attributes
 	/// Position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * float.sizeof, cast(void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, Vertex.sizeof, cast(void*)Vertex.position.offsetof);
 	glEnableVertexAttribArray(0);
+	// Normals
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, Vertex.sizeof, cast(void*)Vertex.normal.offsetof);
+	glEnableVertexAttribArray(1);
+	// Texture coords
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, Vertex.sizeof, cast(void*)Vertex.texCoords.offsetof);
+	glEnableVertexAttribArray(2);
 
-	// Unbind the buffer
+	// Unbind the buffers
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // must do this AFTER unbinding the vao
@@ -113,7 +170,6 @@ auto genShape(alias vertices)() {
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
 
-	debug writeln("vertices: ", vertices.length);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, vertices.sizeof, &vertices, GL_STATIC_DRAW);
 
@@ -129,20 +185,19 @@ auto genShape(alias vertices)() {
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, Vertex.sizeof, cast(void*)Vertex.texCoords.offsetof);
 	glEnableVertexAttribArray(2);
 
-	// Unbind the buffer
+	// Unbind the buffers
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // must do this AFTER unbinding the vao
 
 	return vao;
 }
 
 auto genCube() {
-	return genShape!(cubeVertices)();
+	return genShapeElem!(cubeElements, cubeIndices)();
 }
 
 auto genQuad() {
-	return genShape!(quadVertices)();
+	return genShapeElem!(quadElements, quadIndices)();
 }
 
 auto genPoint() {

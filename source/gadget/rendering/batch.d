@@ -6,6 +6,7 @@ import gadget.rendering.shader;
 import gadget.rendering.camera;
 import gadget.rendering.mesh;
 import gadget.rendering.renderstate;
+import gadget.rendering.utils;
 import derelict.opengl;
 import derelict.sfml2;
 import gl3n.math : min;
@@ -15,13 +16,18 @@ import gl3n.linalg;
 class Batch : Mesh {
 	GLuint nInstances = 1;
 
-	this(GLuint vao, GLuint count, Shader shader) {
-		super(vao, count, shader);
-		drawFunc = (in Mesh shape) {
-			shape.setTextures();
-			glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
-					(cast(Batch)shape).nInstances);
-		};
+	this(GLuint vao, GLuint count, Shader shader, bool isIndexed = false) {
+		super(vao, count, shader, isIndexed);
+		if (isIndexed)
+			drawFunc = (in Mesh shape) {
+				glDrawElementsInstanced(shape.primitive, shape.indexCount, GL_UNSIGNED_INT,
+					NULL, (cast(Batch)shape).nInstances);
+			};
+		else
+			drawFunc = (in Mesh shape) {
+				glDrawArraysInstanced(shape.primitive, 0, shape.vertexCount,
+						(cast(Batch)shape).nInstances);
+			};
 	}
 }
 

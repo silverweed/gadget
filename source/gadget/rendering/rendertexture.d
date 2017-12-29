@@ -9,14 +9,16 @@ struct Vertex2D {
 	GLfloat[2] texCoords;
 }
 
-immutable Vertex2D[12] screenQuadVertices = [
+immutable Vertex2D[4] screenQuadElements = [
         // positions      // texCoords
 	{ [-1.0f,  1.0f], [0.0f, 1.0f] },
 	{ [-1.0f, -1.0f], [0.0f, 0.0f] },
 	{ [ 1.0f, -1.0f], [1.0f, 0.0f] },
-	{ [-1.0f,  1.0f], [0.0f, 1.0f] },
-	{ [ 1.0f, -1.0f], [1.0f, 0.0f] },
 	{ [ 1.0f,  1.0f], [1.0f, 1.0f] }
+];
+
+immutable uint[6] screenQuadIndices = [
+	0, 1, 2, 0, 2, 3
 ];
 
 struct RenderTexture {
@@ -70,19 +72,23 @@ auto genRenderTexture(uint width, uint height, uint nColorBufs = 1, bool withDep
 
 	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-	return RenderTexture(fbo, genScreenQuad!screenQuadVertices(), colorBufTex, rbo);
+	return RenderTexture(fbo, genScreenQuad(), colorBufTex, rbo);
 }
 
-auto genScreenQuad(alias vertices)() {
-	uint vao, vbo;
+auto genScreenQuad() {
+	uint vao, vbo, ebo;
 
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, vertices.sizeof, &vertices, GL_STATIC_DRAW);
+	glGenBuffers(1, &ebo);
 
 	glBindVertexArray(vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, screenQuadElements.sizeof, &screenQuadElements, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, screenQuadIndices.sizeof, &screenQuadIndices, GL_STATIC_DRAW);
 
 	// Position
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, Vertex2D.sizeof, cast(void*)Vertex2D.position.offsetof);

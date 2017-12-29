@@ -8,7 +8,7 @@ import std.random;
 import std.math;
 import gadget.rendering.shapes;
 import gadget.rendering.shader;
-import gadget.rendering.mesh;
+import gadget.rendering.batch;
 import gadget.rendering.shadows;
 import gadget.rendering.defaultShaders;
 import derelict.sfml2;
@@ -46,27 +46,29 @@ private class PresetShaderCache {
 
 __gshared auto presetShaders = new PresetShaderCache();
 
-auto makePreset(ShapeType type) {
+auto makePreset(ShapeType type, Shader shader = presetShaders["defaultInstanced"]) {
 	GLuint function() genFunc;
 	GLuint count;
 	GLenum prim = GL_TRIANGLES;
+	bool indexed = true;
 	final switch (type) with (ShapeType) {
 	case CUBE:
 		genFunc = &genCube;
-		count = cubeVertices.length;
+		count = cubeIndices.length;
 		break;
 	case QUAD:
 		genFunc = &genQuad;
-		count = quadVertices.length;
+		count = quadIndices.length;
 		break;
 	case POINT:
+		indexed = false;
 		genFunc = &genPoint;
 		count = 1;
 		prim = GL_POINTS;
 		break;
 	}
 
-	auto shape = new Mesh(genFunc(), count, presetShaders["default"]);
+	auto shape = new Batch(genFunc(), count, shader, indexed);
 	shape.primitive = prim;
 	return shape;
 }
