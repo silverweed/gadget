@@ -40,7 +40,7 @@ void drawWorld(World world, Shader shader = null) {
 
 	foreach (obj; world.objects) {
 		Shader sh = (shader is null) ? obj.shader : shader;
-	
+
 		// Set uniforms
 		if (sh !in processedShaders) {
 			world.setUniforms(sh);
@@ -78,14 +78,14 @@ void setCamera(World world, in Camera camera, Shader shader = null) {
 
 void setLightUniforms(World world, Shader shader, DirLight light) {
 	// XXX: These values are blindly guessed
-	enum near = 3;
-	enum far = 30;
+	enum near = 1;
+	enum far = 20;
 	enum w = 50;
 	enum h = 50;
 
 	const lightProj = mat4.orthographic(-w, w, -h, h, near, far);
 	//const lightProj = mat4.perspective(-w, w, -h, h, near, far);
-	const lightView = mat4.look_at(-light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
+	const lightView = mat4.look_at(-10 * light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
 
 	shader.uniforms["lightVP"] = lightProj * lightView;
 }
@@ -113,7 +113,7 @@ void enableShadows(World world, uint width, uint height) {
 
 void renderDepthMaps(World world) {
 	assert(world.depthMaps.length > 0, "Tried to render depth maps on world without shadows enabled!");
-	
+
 	world.renderLightDepthMap(world.dirLight, world.depthMaps[0]);
 }
 
@@ -162,7 +162,7 @@ void render(World world, in Camera camera, uint target = 0) {
 	const clCol = RenderState.global.clearColor;
 	glClearColor(clCol.r, clCol.g, clCol.b, clCol.a);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+
 	glEnable(GL_DEPTH_TEST);
 
 	// Bind all textures

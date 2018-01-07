@@ -17,6 +17,7 @@ struct DepthMap {
 	uint texture;
 }
 
+// Transform the vertex into light's view space
 enum vs_simpleDepthInstanced = MATERIAL_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
@@ -34,9 +35,10 @@ enum vs_simpleDepthInstanced = MATERIAL_HEADER ~ q{
 	}
 };
 
+// Just fill the z-buffer with the depth info
 enum fs_simpleDepth = MATERIAL_HEADER ~ q{
 
-	void main() {}
+	void main() { /* gl_FragDepth = gl_FragCoord.z; */ }
 };
 
 auto genDepthMap(uint width, uint height) {
@@ -65,7 +67,7 @@ auto genDepthMap(uint width, uint height) {
 	glReadBuffer(GL_NONE);
 	// Check complete status
 	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-		
+
 	return DepthMap(depthMapFbo, width, height, depthMapTex);
 }
 

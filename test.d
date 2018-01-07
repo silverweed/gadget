@@ -24,9 +24,11 @@ float deltaTime = 0;
 float lastFrame = 0;
 Chronometer clock;
 
+World world;
+
 void main(string[] args) {
 
-	enum nLights = 5;
+	enum nLights = 0;
 
 	auto nCubes = 3;
 	if (args.length > 1)
@@ -36,7 +38,7 @@ void main(string[] args) {
 	initRender();
 	auto window = newWindow(WIDTH, HEIGHT);
 
-	auto world = new World();
+	world = new World();
 	world.enableShadows(SHAD_WIDTH, SHAD_HEIGHT);
 	world.enablePostProcessing();
 	world.loadSkybox([
@@ -60,12 +62,14 @@ void main(string[] args) {
 	world.objects ~= ground;
 	world.ambientLight = AmbientLight(
 		vec3(1, 1, 1), // color
-		0.05,          // strength
+		0.00,          // strength
 	);
 	world.dirLight = DirLight(
-		vec3(0.4, 0.4, 0.4), // direction
-		vec3(0.35, 0.35, 0.35), // diffuse
+		-vec3(0.4, 0.4, 0.4), // direction
+		vec3(0.65, 0.65, 0.65), // diffuse
 	);
+	auto dlGizmo = createDirLightGizmo(world.dirLight);
+	world.objects ~= dlGizmo;
 	for (int i = 0; i < nLights; ++i) {
 		auto color = vec3(uniform01(), uniform01(), uniform01());
 		world.pointLights ~= PointLight(
@@ -74,8 +78,10 @@ void main(string[] args) {
 			0.03,          // attenuation
 		);
 	}
-	auto lightGizmos = createLightGizmos(world);
+	auto lightGizmos = createPointLightGizmos(world);
 	world.objects ~= lightGizmos;
+
+	world.objects ~= createWall();
 
 	camera.position.z = 4;
 	camera.moveSpeed = 12f;
@@ -90,6 +96,8 @@ void main(string[] args) {
 	];
 	auto bloomShader = Shader.fromFiles("shaders/gaussianblur.vert", "shaders/bloom.frag");
 
+	auto dlCamera = new Camera();
+
 	renderLoop(window, camera, &processInput, (sfWindow *window, Camera camera, RenderState state) {
 		// Update time
 		auto t = sfTime_asSeconds(clock.getElapsedTime());
@@ -100,13 +108,20 @@ void main(string[] args) {
 
 		moveLights(world, t);
 		updateLightGizmos(world, lightGizmos);
-		world.dirLight.direction = -world.pointLights[0].position;
+		dlGizmo.transform.position = -10 * world.dirLight.direction;
+		//world.dirLight.direction = -world.pointLights[0].position;
 
 		// First pass: render scene to depth map
 		world.renderDepthMaps();
 
 		// Second pass: render scene to quad using generated depth map
-		world.renderToInternalTex(camera);
+		if (!lightPOV)
+			world.renderToInternalTex(camera);
+		else {
+			dlCamera.position = -10 * world.dirLight.direction;
+			dlCamera.front = 10 * world.dirLight.direction;
+			world.renderToInternalTex(dlCamera);
+		}
 
 		// [Insert post processing passes here]
 		//gaussBlur(blurShader, blurTex, world);
@@ -136,6 +151,9 @@ void main(string[] args) {
 }
 
 void processInput(sfWindow *window, Camera camera, RenderState state) {
+	static float phase = 0;
+	static float ampl = 1;
+
 	sfEvent evt;
 	while (sfWindow_pollEvent(window, &evt))
 		evtHandler(evt, camera, state);
@@ -148,9 +166,30 @@ void processInput(sfWindow *window, Camera camera, RenderState state) {
 		camera.move(Direction.BACK);
 	if (sfKeyboard_isKeyPressed(sfKeyD))
 		camera.move(Direction.RIGHT);
+	if (sfKeyboard_isKeyPressed(sfKeyNumpad4)) {
+		phase += 0.1;
+		world.dirLight.direction.z = ampl * sin(phase);
+		world.dirLight.direction.x = ampl * cos(phase);
+	}
+	if (sfKeyboard_isKeyPressed(sfKeyNumpad6)) {
+		phase -= 0.1;
+		world.dirLight.direction.z = ampl * sin(phase);
+		world.dirLight.direction.x = ampl * cos(phase);
+	}
+	if (sfKeyboard_isKeyPressed(sfKeyNumpad8)) {
+		ampl += 0.1;
+		world.dirLight.direction.z = ampl * sin(phase);
+		world.dirLight.direction.x = ampl * cos(phase);
+	}
+	if (sfKeyboard_isKeyPressed(sfKeyNumpad2)) {
+		ampl -= 0.1;
+		world.dirLight.direction.z = ampl * sin(phase);
+		world.dirLight.direction.x = ampl * cos(phase);
+	}
 }
 
 bool doBloom = true;
+bool lightPOV = false;
 void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 	switch (event.type) {
 	case sfEvtResized:
@@ -163,6 +202,9 @@ void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 		switch (event.key.code) {
 		case sfKeyQ:
 			quitRender();
+			break;
+		case sfKeyL:
+			lightPOV = !lightPOV;
 			break;
 		case sfKeyP:
 			clock.toggle();
@@ -244,8 +286,8 @@ auto createGround() {
 	return ground;
 }
 
-auto createLightGizmos(in World world) {
-	auto points = makePreset(ShapeType.POINT, presetShaders["billboardQuad"]);
+auto createPointLightGizmos(in World world) {
+	auto points = makePreset(ShapeType.POINT, presetShaders["billboardQuadInstanced"]);
 	points.primitive = GL_POINTS;
 	points.nInstances = cast(uint)world.pointLights.length;
 	auto colors = new vec3[points.nInstances];
@@ -256,6 +298,58 @@ auto createLightGizmos(in World world) {
 	updateLightGizmos(world, points);
 
 	return points;
+}
+
+auto createDirLightGizmo(in DirLight light) {
+	auto point = new Mesh(genPoint(), 1, presetShaders["billboardQuad"]);
+	point.primitive = GL_POINTS;
+	point.transform.position = -10 * light.direction;
+	point.shader.uniforms["color"] = light.diffuse;
+	point.shader.uniforms["radius"] = 0.8;
+	point.shader.uniforms["scrWidth"] = RenderState.global.screenSize.x;
+	point.shader.uniforms["scrHeight"] = RenderState.global.screenSize.y;
+	return point;
+}
+
+auto createWall() {
+	static immutable Vertex[25] wallElements = [
+		// positions              // normals             // texture coords
+		{ [-0.5f, -0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [0.0f, 0.0f] },
+		{ [ 0.5f,  0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [20.0f, 2.0f] },
+		{ [ 0.5f, -0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [20.0f, 0.0f] },
+		{ [-0.5f,  0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [0.0f, 2.0f] },
+		{ [-0.5f, -0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [0.0f, 0.0f] },
+		{ [ 0.5f, -0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [20.0f, 0.0f] },
+		{ [ 0.5f,  0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [20.0f, 2.0f] },
+		{ [-0.5f,  0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [0.0f, 2.0f] },
+		{ [-0.5f,  0.5f,  0.5f],  [-1.0f,  0.0f, 0.0f],  [20.0f, 0.0f] },
+		{ [-0.5f,  0.5f, -0.5f],  [-1.0f,  0.0f, 0.0f],  [20.0f, 2.0f] },
+		{ [-0.5f, -0.5f, -0.5f],  [-1.0f,  0.0f, 0.0f],  [0.0f, 2.0f] },
+		{ [-0.5f, -0.5f,  0.5f],  [-1.0f,  0.0f, 0.0f],  [0.0f, 0.0f] },
+		{ [ 0.5f,  0.5f,  0.5f],  [1.0f,  0.0f,  0.0f],  [20.0f, 0.0f] },
+		{ [ 0.5f, -0.5f, -0.5f],  [1.0f,  0.0f,  0.0f],  [0.0f, 2.0f] },
+		{ [ 0.5f,  0.5f, -0.5f],  [1.0f,  0.0f,  0.0f],  [20.0f, 2.0f] },
+		{ [ 0.5f, -0.5f,  0.5f],  [1.0f,  0.0f,  0.0f],  [0.0f, 0.0f] },
+		{ [-0.5f, -0.5f, -0.5f],  [0.0f, -1.0f,  0.0f],  [0.0f, 2.0f] },
+		{ [ 0.5f, -0.5f, -0.5f],  [0.0f, -1.0f,  0.0f],  [20.0f, 2.0f] },
+		{ [ 0.5f, -0.5f,  0.5f],  [0.0f, -1.0f,  0.0f],  [20.0f, 0.0f] },
+		{ [-0.5f, -0.5f,  0.5f],  [0.0f, -1.0f,  0.0f],  [0.0f, 0.0f] },
+		{ [ 0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [20.0f, 2.0f] },
+		{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 2.0f] },
+		{ [ 0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [20.0f, 0.0f] },
+		{ [-0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 0.0f] },
+		{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 2.0f] }
+	];
+	auto wall = new Batch(genShapeElem!(wallElements, cubeIndices)(),
+			cubeIndices.length, presetShaders["defaultInstanced"], true);
+	//auto wall = makePreset(ShapeType.CUBE);
+	wall.setData("aInstanceModel", [
+		mat4.identity.scale(50, 5, 1).translate(0, 0, 20).transposed()
+	]);
+	wall.cullFace = true;
+	wall.material.diffuse = genTexture("textures/crystal.jpg");
+	wall.material.specular = genTexture("textures/crystal_specular.jpg");
+	return wall;
 }
 
 void updateLightGizmos(in World world, Batch points) {

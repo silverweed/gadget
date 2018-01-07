@@ -25,7 +25,7 @@ enum f_addPointLight = q{
 		vec3 specular = material.shininess * spec * light.diffuse;
 
 		vec3 result = diffuse * material.diffuse + specular * material.specular;
-		
+
 		// attenuation
 		float dist = length(fragToLight);
 		float atten = 1.0 / (1.0 + light.attenuation * dist * dist);
@@ -49,7 +49,7 @@ enum f_addDirLight = q{
 		vec3 specular = material.shininess * spec * light.diffuse;
 
 		vec3 result = diffuse * material.diffuse + specular * material.specular;
-		
+
 		return result;
 	}
 };
@@ -77,7 +77,7 @@ enum fi_addPointLight = q{
 		vec3 specular = objSpecular * spec * light.diffuse;
 
 		vec3 result = diffuse + specular;
-		
+
 		// attenuation
 		float dist = length(fragToLight);
 		float atten = 1.0 / (1.0 + light.attenuation * dist * dist);
@@ -101,7 +101,7 @@ enum fi_addDirLight = q{
 		vec3 specular = objSpecular * spec * light.diffuse;
 
 		vec3 result = diffuse + specular;
-		
+
 		return result;
 	}
 };
@@ -159,35 +159,6 @@ enum vs_posNormTex = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
-
-	layout (location = 0) in vec3 aPos;
-	layout (location = 1) in vec3 aNormal;
-	layout (location = 2) in vec2 aTexCoord;
-	layout (location = 3) in mat4 aInstanceModel;
-	// location = 4 aInstanceModel
-	// location = 5 aInstanceModel
-	// location = 6 aInstanceModel
-
-	uniform mat4 vp;
-	uniform mat4 lightVP;
-
-	out VS_OUT {
-		vec3 fragPos;
-		vec3 normal;
-		vec2 texCoord;
-		vec4 lightSpaceFragPos;
-	} vs_out;
-
-	void main() {
-		vs_out.fragPos = vec3(aInstanceModel * vec4(aPos, 1.0));
-		vs_out.normal = mat3(transpose(inverse(aInstanceModel))) * aNormal;
-		vs_out.texCoord = aTexCoord;
-		vs_out.lightSpaceFragPos = lightVP * vec4(vs_out.fragPos, 1.0);
-		gl_Position = vp * aInstanceModel * vec4(aPos, 1.0);
-	}
-};
-
 enum fs_blinnPhong = MATERIAL_HEADER ~ q{
 
 	out vec4 fragColor;
@@ -217,6 +188,35 @@ enum fs_blinnPhong = MATERIAL_HEADER ~ q{
 	}
 };
 
+enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
+
+	layout (location = 0) in vec3 aPos;
+	layout (location = 1) in vec3 aNormal;
+	layout (location = 2) in vec2 aTexCoord;
+	layout (location = 3) in mat4 aInstanceModel;
+	// location = 4 aInstanceModel
+	// location = 5 aInstanceModel
+	// location = 6 aInstanceModel
+
+	uniform mat4 vp;
+	uniform mat4 lightVP;
+
+	out VS_OUT {
+		vec3 fragPos;
+		vec3 normal;
+		vec2 texCoord;
+		vec4 lightSpaceFragPos;
+	} vs_out;
+
+	void main() {
+		vs_out.fragPos = vec3(aInstanceModel * vec4(aPos, 1.0));
+		vs_out.normal = mat3(transpose(inverse(aInstanceModel))) * aNormal;
+		vs_out.texCoord = aTexCoord;
+		vs_out.lightSpaceFragPos = lightVP * vec4(vs_out.fragPos, 1.0);
+		gl_Position = vp * aInstanceModel * vec4(aPos, 1.0);
+	}
+};
+
 enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 
 	layout (location = 0) out vec4 fragColor;
@@ -242,6 +242,7 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 	void main() {
 		vec3 objDiffuse = texture(material.diffuse, fs_in.texCoord).rgb;
 		vec3 objSpecular = texture(material.specular, fs_in.texCoord).rrr;
+
 		vec3 result = vec3(0.0);
 		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
 			result += addPointLight(pointLight[i], objDiffuse, objSpecular);
@@ -259,6 +260,25 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 };
 
 enum vs_billboardQuad = MATERIAL_HEADER ~ q{
+
+	layout (location = 0) in vec3 aPos;
+
+	uniform mat4 mvp;
+	uniform vec3 color;
+
+	out VS_OUT {
+		vec4 center;
+		vec3 color;
+	} vs_out;
+
+	void main() {
+		vs_out.color = color;
+		vs_out.center = gl_Position;
+		gl_Position = mvp * vec4(aPos, 1.0);
+	}
+};
+
+enum vs_billboardQuadInstanced = MATERIAL_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 	layout (location = 1) in vec3 aColor;
@@ -333,7 +353,7 @@ enum fs_billboardQuad = MATERIAL_HEADER ~ q{
 };
 
 enum vs_screenQuad = MATERIAL_HEADER ~ q{
-	
+
 	layout (location = 0) in vec2 aPos;
 	layout (location = 1) in vec2 aTexCoords;
 
@@ -346,7 +366,7 @@ enum vs_screenQuad = MATERIAL_HEADER ~ q{
 };
 
 enum fs_screenQuad = MATERIAL_HEADER ~ q{
-	
+
 	out vec4 fragColor;
 
 	in vec2 texCoords;
@@ -359,7 +379,7 @@ enum fs_screenQuad = MATERIAL_HEADER ~ q{
 };
 
 enum fs_viewDepth = MATERIAL_HEADER ~ q{
-	
+
 	out vec4 fragColor;
 
 	in vec2 texCoords;
@@ -373,7 +393,7 @@ enum fs_viewDepth = MATERIAL_HEADER ~ q{
 };
 
 enum vs_skybox = MATERIAL_HEADER ~ q{
-	
+
 	layout (location = 0) in vec3 aPos;
 
 	out vec3 texCoords;
@@ -388,7 +408,7 @@ enum vs_skybox = MATERIAL_HEADER ~ q{
 };
 
 enum fs_skybox = MATERIAL_HEADER ~ q{
-	
+
 	out vec4 fragColor;
 
 	in vec3 texCoords;

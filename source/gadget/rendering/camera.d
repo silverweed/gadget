@@ -8,6 +8,10 @@ enum Direction {
 	FWD, BACK, LEFT, RIGHT
 }
 
+enum ProjType {
+	PERSPECTIVE, ORTHOGRAPHIC
+}
+
 class Camera {
 	this(in vec3 position = vec3(0, 0, 0)) {
 		this.position = position;
@@ -16,8 +20,14 @@ class Camera {
 
 	@property vec3 up() pure const { return _up; }
 	@property vec3 front() pure const { return _front; }
+	@property void front(in vec3 f) {
+		const fym1 = sqrt(f.y * f.y - 1);
+		_front = f;
+		yaw = asin(f.z / fym1);
+		pitch = acos(fym1);
+	}
 	@property vec3 right() pure const { return _right; }
-	
+
 	vec3 worldUp = vec3(0, 1, 0);
 	vec3 position;
 	float yaw = -PI/2;
@@ -29,6 +39,7 @@ class Camera {
 	float height = 6f;
 	float near = 0.1;
 	float far = 5000f;
+	ProjType projType = ProjType.PERSPECTIVE;
 	private {
 		vec3 _up;
 		vec3 _front;
@@ -51,7 +62,10 @@ mat4 viewMatrix(const Camera camera) pure {
 }
 
 mat4 projMatrix(const Camera camera) pure {
-	return mat4.perspective(camera.width, camera.height, camera.fov, camera.near, camera.far);
+	return camera.projType == ProjType.PERSPECTIVE
+		? mat4.perspective(camera.width, camera.height, camera.fov, camera.near, camera.far)
+		: mat4.orthographic(-camera.width / 2, camera.width / 2,
+				-camera.height / 2, camera.height / 2, camera.near, camera.far);
 }
 
 void move(Camera camera, Direction dir, float dt = 1/60.0) {
