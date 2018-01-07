@@ -85,6 +85,7 @@ void setCameraUniforms(Mesh mesh, Shader shader, in Camera camera) {
 	const vp = camera.projMatrix * camera.viewMatrix;
 	shader.uniforms["vp"] = vp;
 	shader.uniforms["mvp"] = vp * model;
+	shader.uniforms["far"] = camera.far;
 }
 
 private:

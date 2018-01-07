@@ -35,22 +35,24 @@ class World {
 	bool ppEnabled = false;
 }
 
-void drawWorld(World world, Shader shader = null) {
+void drawWorld(World world) {
 	bool[Shader] processedShaders;
 
+	// Draw the objects
 	foreach (obj; world.objects) {
-		Shader sh = (shader is null) ? obj.shader : shader;
+		Shader sh = obj.shader;
 
 		// Set uniforms
 		if (sh !in processedShaders) {
 			world.setUniforms(sh);
-			world.setLightUniforms(sh, world.dirLight);
+			setLightUniforms(sh, world.dirLight);
 			processedShaders[sh] = true;
 		}
 
 		obj.draw(sh);
 	}
 
+	// Draw the skybox
 	if (world.skybox.shader !is null) {
 		int depthMode;
 		glGetIntegerv(GL_DEPTH_FUNC, &depthMode);
@@ -76,21 +78,7 @@ void setCamera(World world, in Camera camera, Shader shader = null) {
 	}
 }
 
-void setLightUniforms(World world, Shader shader, DirLight light) {
-	// XXX: These values are blindly guessed
-	enum near = 1;
-	enum far = 20;
-	enum w = 50;
-	enum h = 50;
-
-	const lightProj = mat4.orthographic(-w, w, -h, h, near, far);
-	//const lightProj = mat4.perspective(-w, w, -h, h, near, far);
-	const lightView = mat4.look_at(-10 * light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
-
-	shader.uniforms["lightVP"] = lightProj * lightView;
-}
-
-private void setUniforms(World world, Shader shader) {
+void setUniforms(World world, Shader shader) {
 	shader.uniforms["ambientLight.color"] = world.ambientLight.color;
 	shader.uniforms["ambientLight.strength"] = world.ambientLight.strength;
 	shader.uniforms["dirLight.direction"] = world.dirLight.direction;
@@ -106,15 +94,18 @@ private void setUniforms(World world, Shader shader) {
 void enableShadows(World world, uint width, uint height) {
 	assert(world.depthMaps.length == 0, "Enabled shadows on world but world already had depth maps!");
 
-	// For now we only do shadows for the dir light
+	// Dirlight depth map
 	auto depthMap = genDepthMap(width, height);
 	world.depthMaps ~= depthMap;
+	// Pointlight
+	//auto cubeDepthMap = genDepthCubeMap(width, height);
+	//world.depthMaps ~= cubeDepthMap;
 }
 
 void renderDepthMaps(World world) {
 	assert(world.depthMaps.length > 0, "Tried to render depth maps on world without shadows enabled!");
 
-	world.renderLightDepthMap(world.dirLight, world.depthMaps[0]);
+	world.renderLightDepthMap(world.depthMaps[0]);
 }
 
 void enablePostProcessing(World world) {
@@ -167,8 +158,11 @@ void render(World world, in Camera camera, uint target = 0) {
 
 	// Bind all textures
 	if (world.depthMaps.length > 0) {
+		// Depth map for directional light
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, world.depthMaps[0].texture);
+		//glActiveTexture(GL_TEXTURE1);
+		//glBindTexture(GL_TEXTURE_CUBE_MAP, world.depthMaps[1].texture);
 	}
 
 	world.setCamera(camera);

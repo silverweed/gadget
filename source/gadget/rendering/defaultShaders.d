@@ -134,6 +134,24 @@ enum f_calcShadow = q{
 	}
 };
 
+enum f_calcPointShadow = q{
+	float calcPointShadow(vec3 fragPos, vec3 lightPos) {
+		// get vector between fragment position and light position
+		vec3 fragToLight = fragPos - lightPos;
+		// use the light to fragment vector to sample from the depth map
+		float closestDepth = texture(cubeDepthMap, fragToLight).r;
+		// it is currently in linear range between [0,1]. Re-transform back to original value
+		closestDepth *= far;
+		// now get current linear depth as the length between the fragment and light position
+		float currentDepth = length(fragToLight);
+		// now test for shadows
+		const float bias = 0.05;
+		float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+
+		return shadow;
+	}
+};
+
 //////////////////////////////////////////////
 
 enum vs_posNormTex = MATERIAL_HEADER ~ q{
@@ -233,11 +251,13 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 	uniform PointLight pointLight[MAX_POINT_LIGHTS];
 	uniform DirLight dirLight;
 	uniform AmbientLight ambientLight;
+	uniform float far;
 
 	uniform sampler2D depthMap;
+	//uniform samplerCube cubeDepthMap;
 	uniform Material material;
 
-} ~ fi_addAmbientLight ~ fi_addPointLight ~ fi_addDirLight ~ f_calcShadow ~ q{
+} ~ fi_addAmbientLight ~ fi_addPointLight ~ fi_addDirLight ~ f_calcShadow /*~ f_calcPointShadow */ ~ q{
 
 	void main() {
 		vec3 objDiffuse = texture(material.diffuse, fs_in.texCoord).rgb;
@@ -249,6 +269,7 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 		result += addDirLight(dirLight, objDiffuse, objSpecular);
 
 		float shadow = calcShadow(fs_in.lightSpaceFragPos);
+		//float shadow = calcPointShadow(fs_in.fragPos, pointLight[0].position);
 		result = result * (1.0 - shadow) + addAmbientLight(ambientLight, objDiffuse);
 
 		fragColor = vec4(result, 1.0);

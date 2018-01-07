@@ -36,6 +36,9 @@ private class PresetShaderCache {
 		case "simpleDepth":
 			shader = new Shader(vs_simpleDepthInstanced, fs_simpleDepth, null, name);
 			break;
+		case "cubemapDepth":
+			shader = new Shader(vs_cubemapDepthInstanced, fs_cubemapDepth, gs_cubemapDepth, name);
+			break;
 		case "screenQuad":
 			shader = new Shader(vs_screenQuad, fs_screenQuad, null, name);
 			break;

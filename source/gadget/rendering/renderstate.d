@@ -1,5 +1,6 @@
 module gadget.rendering.renderstate;
 
+import std.typecons;
 import gl3n.linalg;
 import derelict.opengl;
 

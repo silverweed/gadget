@@ -1,9 +1,10 @@
 module gadget.rendering.gl;
 
+import std.conv;
+import std.stdio;
 import derelict.sfml2.system;
 import derelict.sfml2.window;
 import derelict.opengl;
-import std.stdio;
 import gl3n.linalg;
 import gadget.rendering.presets;
 import gadget.rendering.camera;
@@ -128,3 +129,19 @@ enum DEFER_REBIND_CUR_FBO = q{
 		scope (exit) glBindFramebuffer(GL_FRAMEBUFFER, curFbo);
 	}
 };
+
+void checkFramebuffer() {
+	const s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	switch (s) {
+	case GL_FRAMEBUFFER_COMPLETE:
+		return;
+	case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+		assert(false, "Framebuffer has incomplete attachment!");
+	case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+		assert(false, "Framebuffer is missing an attachment!");
+	case GL_FRAMEBUFFER_UNSUPPORTED:
+		assert(false, "Framebuffer is unsupported!");
+	default:
+		assert(false, "Framebuffer incomplete! Error code: " ~ s.to!string);
+	}
+}

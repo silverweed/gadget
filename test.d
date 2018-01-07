@@ -28,7 +28,7 @@ World world;
 
 void main(string[] args) {
 
-	enum nLights = 0;
+	enum nLights = 1;
 
 	auto nCubes = 3;
 	if (args.length > 1)
