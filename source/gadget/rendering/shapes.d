@@ -129,7 +129,6 @@ immutable uint[36] cubeIndices = [
 
 // Configures a vertex array object to contain a shape. Returns the vao index.
 // This shape is meant to be used with glDrawElements.
-//@disable // since we don't use indexed drawing yet
 auto genShapeElem(alias vertices, alias indices)() {
 	uint vbo, vao, ebo;
 

@@ -222,14 +222,24 @@ auto createCubes(uint n) {
 }
 
 auto createGround() {
-	auto ground = makePreset(ShapeType.QUAD);
+	enum GROUND_SIZE = 100;
+	static immutable Vertex[4] groundElements = [
+		{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [10f, 10f] },
+		{ [-0.5f,  0.5f, 0f], [0f, 0f, 1f], [0f, 10f] },
+		{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
+		{ [ 0.5f, -0.5f, 0f], [0f, 0f, 1f], [10f, 0f] },
+	];
+	auto ground = new Batch(genShapeElem!(groundElements, quadIndices)(),
+			quadIndices.length, presetShaders["defaultInstanced"], true);
+	//auto ground = makePreset(ShapeType.QUAD);
 	ground.material.diffuse = genTexture("textures/ground.jpg");
 	ground.material.specular = genTexture("textures/ground_specular.jpg");
 	ground.material.shininess = 0;
 	ground.cullFace = true;
 	ground.nInstances = 1;
 	ground.setData("aInstanceModel", [
-		mat4.identity.scale(100, 100, 100).rotate(PI / 2, vec3(1, 0, 0)).translate(0, -0.5, 0).transposed()
+		mat4.identity.scale(GROUND_SIZE, GROUND_SIZE, GROUND_SIZE)
+				.rotate(PI / 2, vec3(1, 0, 0)).translate(0, -0.5, 0).transposed()
 	]);
 	return ground;
 }
@@ -265,7 +275,7 @@ void updateLightGizmos(in World world, Batch points) {
 		glBindBuffer(GL_ARRAY_BUFFER, lightGizmosPosVbo);
 		// Realloc the buffer to orphan it
 		glBufferData(GL_ARRAY_BUFFER, bufsize, NULL, GL_STREAM_DRAW);
-		
+
 		// Update the data
 		glBufferSubData(GL_ARRAY_BUFFER, 0, bufsize, pos.ptr);
 	}
@@ -277,7 +287,7 @@ void updateLightGizmos(in World world, Batch points) {
 void moveLights(World world, float t) {
 	for (int i = 0; i < world.pointLights.length; ++i) {
 		auto lightPos = vec3(5 * (i+1) * sin(t + i * 0.7),
-				3f + 2f * (i+1) * sin(t / 5 + i * 0.7),
+				max(0.5, 7f + 2f * (i+1) * sin(t / 5 + i * 0.7)),
 				7 * (i+1) * cos(t + i * 0.7));
 		world.pointLights[i].position = lightPos;
 	}
@@ -306,7 +316,7 @@ void moveCubes(Batch cubes, float dt) {
 	const bufsize = mat4.sizeof * (cubeModels.length + 1);
 	// Realloc the buffer to orphan it
 	glBufferData(GL_ARRAY_BUFFER, bufsize, NULL, GL_STREAM_DRAW);
-	
+
 	foreach (i, model; cubeModels) {
 		const v = cubeVelocities[i] * dt * 3;
 		//cubeModels[i] = model
@@ -316,7 +326,7 @@ void moveCubes(Batch cubes, float dt) {
 				.transposed()
 				;
 	}
-	
+
 	// Update the data
 	glBufferSubData(GL_ARRAY_BUFFER, 0, bufsize, cubeModels.ptr);
 }
