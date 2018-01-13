@@ -108,7 +108,7 @@ void main(string[] args) {
 
 		moveLights(world, t);
 		updateLightGizmos(world, lightGizmos);
-		dlGizmo.transform.position = -10 * world.dirLight.direction;
+		dlGizmo.transform.position = -14 * world.dirLight.direction;
 		//world.dirLight.direction = -world.pointLights[0].position;
 
 		// First pass: render scene to depth map
@@ -344,7 +344,7 @@ auto createWall() {
 			cubeIndices.length, presetShaders["defaultInstanced"], true);
 	//auto wall = makePreset(ShapeType.CUBE);
 	wall.setData("aInstanceModel", [
-		mat4.identity.scale(50, 5, 1).translate(0, 0, 20).transposed()
+		mat4.identity.scale(30, 5, 1).translate(0, 0, 10).transposed()
 	]);
 	wall.cullFace = true;
 	wall.material.diffuse = genTexture("textures/crystal.jpg");
@@ -381,7 +381,7 @@ void updateLightGizmos(in World world, Batch points) {
 void moveLights(World world, float t) {
 	for (int i = 0; i < world.pointLights.length; ++i) {
 		auto lightPos = vec3(5 * (i+1) * sin(t + i * 0.7),
-				max(0.5, 7f + 2f * (i+1) * sin(t / 5 + i * 0.7)),
+				1,//max(0.5, 7f + 2f * (i+1) * sin(t / 5 + i * 0.7)),
 				7 * (i+1) * cos(t + i * 0.7));
 		world.pointLights[i].position = lightPos;
 	}

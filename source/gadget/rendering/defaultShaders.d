@@ -252,12 +252,13 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 	uniform DirLight dirLight;
 	uniform AmbientLight ambientLight;
 	uniform float far;
+	uniform bool False;
 
 	uniform sampler2D depthMap;
-	//uniform samplerCube cubeDepthMap;
+	uniform samplerCube cubeDepthMap;
 	uniform Material material;
 
-} ~ fi_addAmbientLight ~ fi_addPointLight ~ fi_addDirLight ~ f_calcShadow /*~ f_calcPointShadow */ ~ q{
+} ~ fi_addAmbientLight ~ fi_addPointLight ~ fi_addDirLight ~ f_calcShadow ~ f_calcPointShadow  ~ q{
 
 	void main() {
 		vec3 objDiffuse = texture(material.diffuse, fs_in.texCoord).rgb;
@@ -272,7 +273,12 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 		//float shadow = calcPointShadow(fs_in.fragPos, pointLight[0].position);
 		result = result * (1.0 - shadow) + addAmbientLight(ambientLight, objDiffuse);
 
-		fragColor = vec4(result, 1.0);
+		//vec3 fragToLight = (fs_in.fragPos - pointLight[0].position);
+		//float closestDepth = texture(cubeDepthMap, fragToLight).r;
+		//if (False)
+			fragColor = vec4(result, 1.0);
+		//else
+			//fragColor = vec4(vec3(closestDepth), 1.0);
 		//fragColor = vec4(fs_in.texCoord.x, fs_in.texCoord.y, 0, 1.0);
 
 		float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));

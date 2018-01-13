@@ -92,7 +92,7 @@ enum fs_cubemapDepth = MATERIAL_HEADER ~ q{
 	void main() {
 		float lightDist = length(fragPos.xyz - lightPos);
 		// map to [0, 1]
-		lightDist /= far;
+		lightDist = lightDist / far;
 		gl_FragDepth = lightDist;
 	}
 };
@@ -126,7 +126,12 @@ auto genDepthMap(uint width, uint height) {
 	return DepthMap(depthMapFbo, width, height, depthMapTex);
 }
 
+/// WARNING: if width and height values are too big, an 'unsupported' framebuffer may result!
 auto genDepthCubeMap(uint width, uint height) {
+	// Create framebuffer object
+	uint depthMapFbo;
+	glGenFramebuffers(1, &depthMapFbo);
+
 	// Create cubemap
 	uint depthMapTex;
 	glGenTextures(1, &depthMapTex);
@@ -142,13 +147,10 @@ auto genDepthCubeMap(uint width, uint height) {
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	// Create framebuffer object
-	uint depthMapFbo;
-	glGenFramebuffers(1, &depthMapFbo);
-
-	//mixin(DEFER_REBIND_CUR_FBO);
+	mixin(DEFER_REBIND_CUR_FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFbo);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthMapTex, 0);
+	debug checkGLError();
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	checkFramebuffer(); // XXX
@@ -156,8 +158,10 @@ auto genDepthCubeMap(uint width, uint height) {
 	return DepthMap(depthMapFbo, width, height, depthMapTex);
 }
 
-void renderLightDepthMap(World world, DepthMap depthMap) {
+void renderLightDepthMap(World world, DepthMap[] depthMaps) {
 	mixin(DEFER_REBIND_CUR_FBO);
+
+	auto depthMap = depthMaps[0];
 
 	glViewport(0, 0, depthMap.width, depthMap.height);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMap.fbo);
@@ -166,32 +170,33 @@ void renderLightDepthMap(World world, DepthMap depthMap) {
 	auto depthShader = presetShaders["simpleDepth"];
 	//auto depthShader = presetShaders["cubemapDepth"];
 
+	world.setUniforms(depthShader);
+	depthShader.setLightUniforms(world.dirLight);
+	//depthShader.setLightUniforms(world.pointLights[0], depthMap);
+
 	// Render scene
 	foreach (obj; world.objects) {
-		world.setUniforms(depthShader);
-		depthShader.setLightUniforms(world.dirLight);
-		//depthShader.setLightUniforms(world.pointLights[0], depthMap);
 		obj.draw(depthShader);
 	}
 }
 
 void setLightUniforms(Shader shader, DirLight light) {
 	// XXX: These values are blindly guessed
-	enum near = 1;
-	enum far = 20;
+	enum near = 1.0;
+	enum far = 30.0;
 	enum w = 50;
 	enum h = 50;
 
 	const lightProj = mat4.orthographic(-w, w, -h, h, near, far);
 	//const lightProj = mat4.perspective(-w, w, -h, h, near, far);
-	const lightView = mat4.look_at(-10 * light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
+	const lightView = mat4.look_at(-14 * light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
 
 	shader.uniforms["lightVP"] = lightProj * lightView;
 }
 
 void setLightUniforms(Shader shader, PointLight light, DepthMap depthMap) {
-	enum near = 1;
-	enum far = 25;
+	enum near = 0.5;
+	enum far = 25.0;
 	enum w = 50;
 	enum h = 50;
 

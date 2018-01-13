@@ -145,3 +145,14 @@ void checkFramebuffer() {
 		assert(false, "Framebuffer incomplete! Error code: " ~ s.to!string);
 	}
 }
+
+void checkGLError() {
+	const s = glGetError();
+	switch (s) {
+	case GL_NO_ERROR: return;
+	case GL_INVALID_ENUM: assert(false, "GL_INVALID_ENUM!");
+	case GL_INVALID_OPERATION: assert(false, "GL_INVALID_OPERATION!");
+	case GL_INVALID_VALUE: assert(false, "GL_INVALID_VALUE!");
+	default: assert(false, "Other GL error: " ~ s.to!string);
+	}
+}

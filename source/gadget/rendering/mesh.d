@@ -63,7 +63,7 @@ void draw(in Mesh mesh, Shader shader) {
 	shader.applyUniforms();
 	debug shader.assertAllUniformsDefined();
 
-	mesh.setTextures();
+	mesh.setTextures(shader);
 
 	auto wasCullEnabled = glIsEnabled(GL_CULL_FACE);
 	cull(mesh.cullFace);
@@ -90,10 +90,10 @@ void setCameraUniforms(Mesh mesh, Shader shader, in Camera camera) {
 
 private:
 
-void setTextures(in Mesh mesh) {
-	glActiveTexture(GL_TEXTURE1);
+void setTextures(in Mesh mesh, in Shader shader) {
+	glActiveTexture(GL_TEXTURE0 + shader.uniforms["material.diffuse"].get!int);
 	glBindTexture(GL_TEXTURE_2D, mesh.material.diffuse);
-	glActiveTexture(GL_TEXTURE2);
+	glActiveTexture(GL_TEXTURE0 + shader.uniforms["material.specular"].get!int);
 	glBindTexture(GL_TEXTURE_2D, mesh.material.specular);
 }
 
@@ -105,7 +105,10 @@ void setDefaultUniforms(in Mesh mesh, Shader shader) {
 			.translate(t.position);
 	shader.setMaterialUniforms(mesh.material);
 	shader.uniforms["model"] = model;
-	shader.uniforms["depthMap"] = 0;
-	shader.uniforms["material.diffuse"] = 1;
-	shader.uniforms["material.specular"] = 2;
+	debug shader.uniforms["False"] = false;
+	int texNum = 0;
+	shader.uniforms["depthMap"] = texNum++;
+	shader.uniforms["cubeDepthMap"] = texNum++;
+	shader.uniforms["material.diffuse"] = texNum++;
+	shader.uniforms["material.specular"] = texNum++;
 }

@@ -70,7 +70,7 @@ auto genRenderTexture(uint width, uint height, uint nColorBufs = 1, bool withDep
 				GL_RENDERBUFFER, rbo);
 	}
 
-	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+	checkFramebuffer();
 
 	return RenderTexture(fbo, genScreenQuad(), colorBufTex, rbo);
 }

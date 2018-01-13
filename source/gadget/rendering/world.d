@@ -98,14 +98,14 @@ void enableShadows(World world, uint width, uint height) {
 	auto depthMap = genDepthMap(width, height);
 	world.depthMaps ~= depthMap;
 	// Pointlight
-	//auto cubeDepthMap = genDepthCubeMap(width, height);
-	//world.depthMaps ~= cubeDepthMap;
+	auto cubeDepthMap = genDepthCubeMap(4096, 4096);
+	world.depthMaps ~= cubeDepthMap;
 }
 
 void renderDepthMaps(World world) {
 	assert(world.depthMaps.length > 0, "Tried to render depth maps on world without shadows enabled!");
 
-	world.renderLightDepthMap(world.depthMaps[0]);
+	world.renderLightDepthMap(world.depthMaps);
 }
 
 void enablePostProcessing(World world) {
@@ -161,8 +161,8 @@ void render(World world, in Camera camera, uint target = 0) {
 		// Depth map for directional light
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, world.depthMaps[0].texture);
-		//glActiveTexture(GL_TEXTURE1);
-		//glBindTexture(GL_TEXTURE_CUBE_MAP, world.depthMaps[1].texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, world.depthMaps[1].texture);
 	}
 
 	world.setCamera(camera);
