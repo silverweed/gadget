@@ -1,5 +1,6 @@
 module gadget.rendering.shapes;
 
+import std.typecons;
 import derelict.opengl;
 debug import std.stdio;
 
@@ -8,6 +9,8 @@ struct Vertex {
 	GLfloat[3] normal;
 	GLfloat[2] texCoords;
 }
+
+alias Index = uint;
 
 enum ShapeType {
 	CUBE,
@@ -20,7 +23,6 @@ immutable Vertex[1] pointVertices = [
 	{ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0] }
 ];
 
-/*
 immutable Vertex[6] quadVertices = [
 	{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [1f, 1f] },
 	{ [-0.5f,  0.5f, 0f], [0f, 0f, 1f], [0f, 1f] },
@@ -29,7 +31,6 @@ immutable Vertex[6] quadVertices = [
 	{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
 	{ [ 0.5f, -0.5f, 0f], [0f, 0f, 1f], [1f, 0f] },
 ];
-*/
 
 immutable Vertex[4] quadElements = [
 	{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [1f, 1f] },
@@ -129,7 +130,7 @@ immutable uint[36] cubeIndices = [
 
 // Configures a vertex array object to contain a shape. Returns the vao index.
 // This shape is meant to be used with glDrawElements.
-auto genShapeElem(alias vertices, alias indices)() {
+auto genShapeElem(in Vertex[] vertices, in Index[] indices) {
 	uint vbo, vao, ebo;
 
 	glGenVertexArrays(1, &vao);
@@ -139,10 +140,10 @@ auto genShapeElem(alias vertices, alias indices)() {
 	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, vertices.sizeof, &vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, Vertex.sizeof * vertices.length, vertices.ptr, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.sizeof, &indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Index.sizeof * indices.length, indices.ptr, GL_STATIC_DRAW);
 
 	/// Position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, Vertex.sizeof, cast(void*)Vertex.position.offsetof);
@@ -163,14 +164,14 @@ auto genShapeElem(alias vertices, alias indices)() {
 }
 
 // Like genShapeElem but used with glDrawArrays
-auto genShape(alias vertices)() {
+auto genShape(in Vertex[] vertices) {
 	uint vao, vbo;
 
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, vertices.sizeof, &vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, Vertex.sizeof * vertices.length, vertices.ptr, GL_STATIC_DRAW);
 
 	glBindVertexArray(vao);
 
@@ -192,13 +193,46 @@ auto genShape(alias vertices)() {
 }
 
 auto genCube() {
-	return genShapeElem!(cubeElements, cubeIndices)();
+	return genShapeElem(cubeElements, cubeIndices);
 }
 
 auto genQuad() {
-	return genShapeElem!(quadElements, quadIndices)();
+	//const tup = createIndexBuffer(quadVertices);
+	//return genShapeElem(tup[0], tup[1]);
+	return genShapeElem(quadElements, quadIndices);
 }
 
 auto genPoint() {
-	return genShape!(pointVertices)();
+	return genShape(pointVertices);
+}
+
+// Given a vertex array, returns a tuple (uniqued vertex array, indices array)
+auto createIndexBuffer(in Vertex[] vertices) {
+	Vertex[] newVertices;
+	uint[] indices;
+
+	static int findSimilar(in uint[] inds, in Vertex[] verts, in Vertex v) pure {
+		foreach (idx; inds) {
+			const vv = verts[idx];
+			if (v.position == vv.position &&
+				v.normal == vv.normal &&
+				v.texCoords == vv.texCoords)
+			{
+				return idx;
+			}
+		}
+		return -1;
+	}
+
+	foreach (v; vertices) {
+		int f = findSimilar(indices, newVertices, v);
+		if (f >= 0)
+			indices ~= f;
+		else {
+			newVertices ~= v;
+			indices ~= cast(uint)newVertices.length - 1;
+		}
+	}
+
+	return tuple(newVertices, indices);
 }

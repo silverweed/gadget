@@ -271,7 +271,7 @@ auto createGround() {
 		{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
 		{ [ 0.5f, -0.5f, 0f], [0f, 0f, 1f], [10f, 0f] },
 	];
-	auto ground = new Batch(genShapeElem!(groundElements, quadIndices)(),
+	auto ground = new Batch(genShapeElem(groundElements, quadIndices),
 			quadIndices.length, presetShaders["defaultInstanced"], true);
 	//auto ground = makePreset(ShapeType.QUAD);
 	ground.material.diffuse = genTexture("textures/ground.jpg");
@@ -340,7 +340,7 @@ auto createWall() {
 		{ [-0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 0.0f] },
 		{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 2.0f] }
 	];
-	auto wall = new Batch(genShapeElem!(wallElements, cubeIndices)(),
+	auto wall = new Batch(genShapeElem(wallElements, cubeIndices),
 			cubeIndices.length, presetShaders["defaultInstanced"], true);
 	//auto wall = makePreset(ShapeType.CUBE);
 	wall.setData("aInstanceModel", [
