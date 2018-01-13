@@ -62,9 +62,9 @@ enum fi_addAmbientLight = q{
 };
 
 enum fi_addPointLight = q{
-	vec3 addPointLight(in PointLight light, in vec3 objDiffuse, in vec3 objSpecular) {
+	vec3 addPointLight(in PointLight light, in vec3 objDiffuse, in vec3 objSpecular, in vec3 objNormal) {
 		// diffuse
-		vec3 norm = normalize(fs_in.normal);
+		vec3 norm = normalize(objNormal);
 		vec3 fragToLight = light.position - fs_in.fragPos;
 		vec3 lightDir = normalize(fragToLight);
 		float diff = max(dot(norm, lightDir), 0.0);
@@ -87,9 +87,9 @@ enum fi_addPointLight = q{
 };
 
 enum fi_addDirLight = q{
-	vec3 addDirLight(in DirLight light, in vec3 objDiffuse, in vec3 objSpecular) {
+	vec3 addDirLight(in DirLight light, in vec3 objDiffuse, in vec3 objSpecular, in vec3 objNormal) {
 		// diffuse
-		vec3 norm = normalize(fs_in.normal);
+		vec3 norm = normalize(objNormal);
 		vec3 lightDir = normalize(-light.direction);
 		float diff = max(dot(norm, lightDir), 0.0);
 		vec3 diffuse = diff * light.diffuse * objDiffuse;
@@ -107,7 +107,7 @@ enum fi_addDirLight = q{
 };
 
 enum f_calcShadow = q{
-	float calcShadow(vec4 lightSpaceFragPos) {
+	float calcShadow(vec4 lightSpaceFragPos, in vec3 objNormal) {
 		// Perform perspective divide (maps coords to [-1, 1])
 		vec3 projCoords = lightSpaceFragPos.xyz / lightSpaceFragPos.w;
 		// Transform [-1, 1] -> [0, 1] to sample from the depth map
@@ -119,7 +119,7 @@ enum f_calcShadow = q{
 		// Compare depth of this fragment with the one sampled from the shadow map
 		// Use PCF to smooth shadows
 		const int PCF_OFF = 1;
-		float bias = max(0.005, 0.05 * (1.0 - dot(normalize(fs_in.normal), -dirLight.direction)));
+		float bias = max(0.005, 0.05 * (1.0 - dot(normalize(objNormal), -dirLight.direction)));
 		float shadow = 0.0;
 		vec2 texelSize = 1.0 / textureSize(depthMap, 0);
 		for (int x = -PCF_OFF; x <= PCF_OFF; ++x) {
@@ -222,18 +222,22 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 
 	out VS_OUT {
 		vec3 fragPos;
-		vec3 normal;
 		vec2 texCoord;
-		vec3 tangent;
 		vec4 lightSpaceFragPos;
+		mat3 tbn;
 	} vs_out;
 
 	void main() {
 		vs_out.fragPos = vec3(aInstanceModel * vec4(aPos, 1.0));
-		vs_out.normal = mat3(transpose(inverse(aInstanceModel))) * aNormal;
 		vs_out.texCoord = aTexCoord;
-		vs_out.tangent = aTangent;
 		vs_out.lightSpaceFragPos = lightVP * vec4(vs_out.fragPos, 1.0);
+		vec3 t = normalize(vec3(aInstanceModel * vec4(aTangent, 0.0)));
+		vec3 n = normalize(vec3(aInstanceModel * vec4(aNormal, 0.0)));
+		// re-orthogonalize T with respect to N
+		t = normalize(t - dot(t, n) * n);
+		// then retrieve perpendicular vector B with the cross product of T and N
+		vec3 b = cross(n, t);
+		vs_out.tbn = mat3(t, b, n);
 		gl_Position = vp * aInstanceModel * vec4(aPos, 1.0);
 	}
 };
@@ -245,10 +249,9 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 
 	in VS_OUT {
 		vec3 fragPos;
-		vec3 normal;
 		vec2 texCoord;
-		vec3 tangent;
 		vec4 lightSpaceFragPos;
+		mat3 tbn;
 	} fs_in;
 
 	uniform vec3 viewPos;
@@ -267,23 +270,25 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 	void main() {
 		vec3 objDiffuse = texture(material.diffuse, fs_in.texCoord).rgb;
 		vec3 objSpecular = texture(material.specular, fs_in.texCoord).rrr;
+		vec3 objNormal = texture(material.normal, fs_in.texCoord).rgb;
+		objNormal = normalize(2.0 * objNormal - 1.0);
+		objNormal = normalize(fs_in.tbn * objNormal);
 
 		vec3 result = vec3(0.0);
 		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
-			result += addPointLight(pointLight[i], objDiffuse, objSpecular);
-		result += addDirLight(dirLight, objDiffuse, objSpecular);
+			result += addPointLight(pointLight[i], objDiffuse, objSpecular, objNormal);
+		result += addDirLight(dirLight, objDiffuse, objSpecular, objNormal);
 
-		float shadow = calcShadow(fs_in.lightSpaceFragPos);
+		float shadow = calcShadow(fs_in.lightSpaceFragPos, objNormal);
 		//float shadow = calcPointShadow(fs_in.fragPos, pointLight[0].position);
 		result = result * (1.0 - shadow) + addAmbientLight(ambientLight, objDiffuse);
 
 		//vec3 fragToLight = (fs_in.fragPos - pointLight[0].position);
 		//float closestDepth = texture(cubeDepthMap, fragToLight).r;
-		if (False)
+		//if (False)
 			fragColor = vec4(result, 1.0);
-		else
-			fragColor = vec4(fs_in.tangent, 1.0);
-			//fragColor = vec4(vec3(closestDepth), 1.0);
+		//else
+			//fragColor = vec4(objNormal, 1.0);
 		//fragColor = vec4(fs_in.texCoord.x, fs_in.texCoord.y, 0, 1.0);
 
 		float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));

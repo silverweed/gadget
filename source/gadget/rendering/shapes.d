@@ -217,6 +217,7 @@ auto genPoint() {
 
 // Given a vertex array, fills it with the calculated tangents and bitangents.
 void calcTangents(Vertex[] vertices) {
+	writeln("calculating ", vertices.length, " tangents.");
 	for (int i = 0; i < vertices.length; i += 3) {
 		const v0 = vertices[i].position;
 		const v1 = vertices[i+1].position;

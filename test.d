@@ -62,7 +62,7 @@ void main(string[] args) {
 	world.objects ~= ground;
 	world.ambientLight = AmbientLight(
 		vec3(1, 1, 1), // color
-		0.00,          // strength
+		0.05,          // strength
 	);
 	world.dirLight = DirLight(
 		-vec3(0.4, 0.4, 0.4), // direction
@@ -240,6 +240,7 @@ auto createCubes(uint n) {
 	auto cubes = makePreset(ShapeType.CUBE);
 	cubes.material.diffuse = genTexture("textures/box.jpg");
 	cubes.material.specular = genTexture("textures/box_specular.jpg");
+	cubes.material.normal = genTexture("textures/box_normal.jpg");
 	cubes.material.shininess = 16;
 	cubes.cullFace = true;
 	cubeModels = new mat4[n];
@@ -266,7 +267,7 @@ auto createCubes(uint n) {
 auto createGround() {
 	enum GROUND_SIZE = 100;
 	auto groundVertices = quadVertices.dup;
-	foreach (v; groundVertices)
+	foreach (ref v; groundVertices)
 		v.texCoords *= 10;
 	calcTangents(groundVertices);
 	auto vi = createIndexBuffer(groundVertices);
@@ -275,6 +276,7 @@ auto createGround() {
 	//auto ground = makePreset(ShapeType.QUAD);
 	ground.material.diffuse = genTexture("textures/ground.jpg");
 	ground.material.specular = genTexture("textures/ground_specular.jpg");
+	ground.material.normal = genTexture("textures/flat_normal.jpg");
 	ground.material.shininess = 0;
 	ground.cullFace = true;
 	ground.nInstances = 1;
@@ -311,36 +313,8 @@ auto createDirLightGizmo(in DirLight light) {
 }
 
 auto createWall() {
-	static immutable Vertex[25] wallElements = [
-		// positions              // normals             // texture coords
-		{ [-0.5f, -0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [0.0f, 0.0f] },
-		{ [ 0.5f,  0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [20.0f, 2.0f] },
-		{ [ 0.5f, -0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [20.0f, 0.0f] },
-		{ [-0.5f,  0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [0.0f, 2.0f] },
-		{ [-0.5f, -0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [0.0f, 0.0f] },
-		{ [ 0.5f, -0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [20.0f, 0.0f] },
-		{ [ 0.5f,  0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [20.0f, 2.0f] },
-		{ [-0.5f,  0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [0.0f, 2.0f] },
-		{ [-0.5f,  0.5f,  0.5f],  [-1.0f,  0.0f, 0.0f],  [20.0f, 0.0f] },
-		{ [-0.5f,  0.5f, -0.5f],  [-1.0f,  0.0f, 0.0f],  [20.0f, 2.0f] },
-		{ [-0.5f, -0.5f, -0.5f],  [-1.0f,  0.0f, 0.0f],  [0.0f, 2.0f] },
-		{ [-0.5f, -0.5f,  0.5f],  [-1.0f,  0.0f, 0.0f],  [0.0f, 0.0f] },
-		{ [ 0.5f,  0.5f,  0.5f],  [1.0f,  0.0f,  0.0f],  [20.0f, 0.0f] },
-		{ [ 0.5f, -0.5f, -0.5f],  [1.0f,  0.0f,  0.0f],  [0.0f, 2.0f] },
-		{ [ 0.5f,  0.5f, -0.5f],  [1.0f,  0.0f,  0.0f],  [20.0f, 2.0f] },
-		{ [ 0.5f, -0.5f,  0.5f],  [1.0f,  0.0f,  0.0f],  [0.0f, 0.0f] },
-		{ [-0.5f, -0.5f, -0.5f],  [0.0f, -1.0f,  0.0f],  [0.0f, 2.0f] },
-		{ [ 0.5f, -0.5f, -0.5f],  [0.0f, -1.0f,  0.0f],  [20.0f, 2.0f] },
-		{ [ 0.5f, -0.5f,  0.5f],  [0.0f, -1.0f,  0.0f],  [20.0f, 0.0f] },
-		{ [-0.5f, -0.5f,  0.5f],  [0.0f, -1.0f,  0.0f],  [0.0f, 0.0f] },
-		{ [ 0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [20.0f, 2.0f] },
-		{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 2.0f] },
-		{ [ 0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [20.0f, 0.0f] },
-		{ [-0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 0.0f] },
-		{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 2.0f] }
-	];
 	auto wallVertices = cubeVertices.dup;
-	foreach (v; wallVertices) {
+	foreach (ref v; wallVertices) {
 		v.texCoords.x *= 20;
 		v.texCoords.y *= 2;
 	}
@@ -355,6 +329,7 @@ auto createWall() {
 	wall.cullFace = true;
 	wall.material.diffuse = genTexture("textures/crystal.jpg");
 	wall.material.specular = genTexture("textures/crystal_specular.jpg");
+	wall.material.normal = genTexture("textures/crystal_normal.jpg");
 	return wall;
 }
 

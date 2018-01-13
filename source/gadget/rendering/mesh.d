@@ -95,6 +95,8 @@ void setTextures(in Mesh mesh, in Shader shader) {
 	glBindTexture(GL_TEXTURE_2D, mesh.material.diffuse);
 	glActiveTexture(GL_TEXTURE0 + shader.uniforms["material.specular"].get!int);
 	glBindTexture(GL_TEXTURE_2D, mesh.material.specular);
+	glActiveTexture(GL_TEXTURE0 + shader.uniforms["material.normal"].get!int);
+	glBindTexture(GL_TEXTURE_2D, mesh.material.normal);
 }
 
 void setDefaultUniforms(in Mesh mesh, Shader shader) {
@@ -111,4 +113,5 @@ void setDefaultUniforms(in Mesh mesh, Shader shader) {
 	shader.uniforms["cubeDepthMap"] = texNum++;
 	shader.uniforms["material.diffuse"] = texNum++;
 	shader.uniforms["material.specular"] = texNum++;
+	shader.uniforms["material.normal"] = texNum++;
 }
