@@ -265,13 +265,12 @@ auto createCubes(uint n) {
 
 auto createGround() {
 	enum GROUND_SIZE = 100;
-	static immutable Vertex[4] groundElements = [
-		{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [10f, 10f] },
-		{ [-0.5f,  0.5f, 0f], [0f, 0f, 1f], [0f, 10f] },
-		{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
-		{ [ 0.5f, -0.5f, 0f], [0f, 0f, 1f], [10f, 0f] },
-	];
-	auto ground = new Batch(genShapeElem(groundElements, quadIndices),
+	auto groundVertices = quadVertices.dup;
+	foreach (v; groundVertices)
+		v.texCoords *= 10;
+	calcTangents(groundVertices);
+	auto vi = createIndexBuffer(groundVertices);
+	auto ground = new Batch(genShapeElem(vi[0], vi[1]),
 			quadIndices.length, presetShaders["defaultInstanced"], true);
 	//auto ground = makePreset(ShapeType.QUAD);
 	ground.material.diffuse = genTexture("textures/ground.jpg");
@@ -340,7 +339,14 @@ auto createWall() {
 		{ [-0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 0.0f] },
 		{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 2.0f] }
 	];
-	auto wall = new Batch(genShapeElem(wallElements, cubeIndices),
+	auto wallVertices = cubeVertices.dup;
+	foreach (v; wallVertices) {
+		v.texCoords.x *= 20;
+		v.texCoords.y *= 2;
+	}
+	calcTangents(wallVertices);
+	auto vi = createIndexBuffer(wallVertices);
+	auto wall = new Batch(genShapeElem(vi[0], vi[1]),
 			cubeIndices.length, presetShaders["defaultInstanced"], true);
 	//auto wall = makePreset(ShapeType.CUBE);
 	wall.setData("aInstanceModel", [

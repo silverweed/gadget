@@ -215,6 +215,7 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 	// location = 4 aInstanceModel
 	// location = 5 aInstanceModel
 	// location = 6 aInstanceModel
+	layout (location = 7) in vec3 aTangent;
 
 	uniform mat4 vp;
 	uniform mat4 lightVP;
@@ -223,6 +224,7 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 		vec3 fragPos;
 		vec3 normal;
 		vec2 texCoord;
+		vec3 tangent;
 		vec4 lightSpaceFragPos;
 	} vs_out;
 
@@ -230,6 +232,7 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 		vs_out.fragPos = vec3(aInstanceModel * vec4(aPos, 1.0));
 		vs_out.normal = mat3(transpose(inverse(aInstanceModel))) * aNormal;
 		vs_out.texCoord = aTexCoord;
+		vs_out.tangent = aTangent;
 		vs_out.lightSpaceFragPos = lightVP * vec4(vs_out.fragPos, 1.0);
 		gl_Position = vp * aInstanceModel * vec4(aPos, 1.0);
 	}
@@ -244,6 +247,7 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 		vec3 fragPos;
 		vec3 normal;
 		vec2 texCoord;
+		vec3 tangent;
 		vec4 lightSpaceFragPos;
 	} fs_in;
 
@@ -275,9 +279,10 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 
 		//vec3 fragToLight = (fs_in.fragPos - pointLight[0].position);
 		//float closestDepth = texture(cubeDepthMap, fragToLight).r;
-		//if (False)
+		if (False)
 			fragColor = vec4(result, 1.0);
-		//else
+		else
+			fragColor = vec4(fs_in.tangent, 1.0);
 			//fragColor = vec4(vec3(closestDepth), 1.0);
 		//fragColor = vec4(fs_in.texCoord.x, fs_in.texCoord.y, 0, 1.0);
 
