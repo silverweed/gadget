@@ -2,12 +2,16 @@ module gadget.rendering.shapes;
 
 import std.typecons;
 import derelict.opengl;
+import gl3n.linalg;
+import gadget.rendering.utils;
 debug import std.stdio;
 
 struct Vertex {
-	GLfloat[3] position;
-	GLfloat[3] normal;
-	GLfloat[2] texCoords;
+	vec3 position;
+	vec3 normal;
+	vec2 texCoords;
+	vec3 tangent;
+	vec3 bitangent;
 }
 
 alias Index = uint;
@@ -20,26 +24,26 @@ enum ShapeType {
 
 /// Utility module to create basic 2d or 3d shapes
 immutable Vertex[1] pointVertices = [
-	{ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0] }
+	{ vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec2(0.0, 0.0) }
 ];
 
 immutable Vertex[6] quadVertices = [
-	{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [1f, 1f] },
-	{ [-0.5f,  0.5f, 0f], [0f, 0f, 1f], [0f, 1f] },
-	{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
-	{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [1f, 1f] },
-	{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
-	{ [ 0.5f, -0.5f, 0f], [0f, 0f, 1f], [1f, 0f] },
+	{ vec3( 0.5f,  0.5f, 0f), vec3(0f, 0f, 1f), vec2(1f, 1f) },
+	{ vec3(-0.5f,  0.5f, 0f), vec3(0f, 0f, 1f), vec2(0f, 1f) },
+	{ vec3(-0.5f, -0.5f, 0f), vec3(0f, 0f, 1f), vec2(0f, 0f) },
+	{ vec3( 0.5f,  0.5f, 0f), vec3(0f, 0f, 1f), vec2(1f, 1f) },
+	{ vec3(-0.5f, -0.5f, 0f), vec3(0f, 0f, 1f), vec2(0f, 0f) },
+	{ vec3( 0.5f, -0.5f, 0f), vec3(0f, 0f, 1f), vec2(1f, 0f) },
 ];
 
 immutable Vertex[4] quadElements = [
-	{ [ 0.5f,  0.5f, 0f], [0f, 0f, 1f], [1f, 1f] },
-	{ [-0.5f,  0.5f, 0f], [0f, 0f, 1f], [0f, 1f] },
-	{ [-0.5f, -0.5f, 0f], [0f, 0f, 1f], [0f, 0f] },
-	{ [ 0.5f, -0.5f, 0f], [0f, 0f, 1f], [1f, 0f] },
+	{ vec3( 0.5f,  0.5f, 0f), vec3(0f, 0f, 1f), vec2(1f, 1f) },
+	{ vec3(-0.5f,  0.5f, 0f), vec3(0f, 0f, 1f), vec2(0f, 1f) },
+	{ vec3(-0.5f, -0.5f, 0f), vec3(0f, 0f, 1f), vec2(0f, 0f) },
+	{ vec3( 0.5f, -0.5f, 0f), vec3(0f, 0f, 1f), vec2(1f, 0f) },
 ];
 
-immutable uint[6] quadIndices = [
+immutable Index[6] quadIndices = [
 	0, 1, 2, 0, 2, 3
 ];
 
@@ -92,34 +96,34 @@ immutable Vertex[36] cubeVertices = [
 
 immutable Vertex[25] cubeElements = [
 	// positions              // normals             // texture coords
-	{ [-0.5f, -0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [0.0f, 0.0f] },
-	{ [ 0.5f,  0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [1.0f, 1.0f] },
-	{ [ 0.5f, -0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [1.0f, 0.0f] },
-	{ [-0.5f,  0.5f, -0.5f],  [0.0f,  0.0f, -1.0f],  [0.0f, 1.0f] },
-	{ [-0.5f, -0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [0.0f, 0.0f] },
-	{ [ 0.5f, -0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [1.0f, 0.0f] },
-	{ [ 0.5f,  0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [1.0f, 1.0f] },
-	{ [-0.5f,  0.5f,  0.5f],  [0.0f,  0.0f, 1.0f],   [0.0f, 1.0f] },
-	{ [-0.5f,  0.5f,  0.5f],  [-1.0f,  0.0f, 0.0f],  [1.0f, 0.0f] },
-	{ [-0.5f,  0.5f, -0.5f],  [-1.0f,  0.0f, 0.0f],  [1.0f, 1.0f] },
-	{ [-0.5f, -0.5f, -0.5f],  [-1.0f,  0.0f, 0.0f],  [0.0f, 1.0f] },
-	{ [-0.5f, -0.5f,  0.5f],  [-1.0f,  0.0f, 0.0f],  [0.0f, 0.0f] },
-	{ [ 0.5f,  0.5f,  0.5f],  [1.0f,  0.0f,  0.0f],  [1.0f, 0.0f] },
-	{ [ 0.5f, -0.5f, -0.5f],  [1.0f,  0.0f,  0.0f],  [0.0f, 1.0f] },
-	{ [ 0.5f,  0.5f, -0.5f],  [1.0f,  0.0f,  0.0f],  [1.0f, 1.0f] },
-	{ [ 0.5f, -0.5f,  0.5f],  [1.0f,  0.0f,  0.0f],  [0.0f, 0.0f] },
-	{ [-0.5f, -0.5f, -0.5f],  [0.0f, -1.0f,  0.0f],  [0.0f, 1.0f] },
-	{ [ 0.5f, -0.5f, -0.5f],  [0.0f, -1.0f,  0.0f],  [1.0f, 1.0f] },
-	{ [ 0.5f, -0.5f,  0.5f],  [0.0f, -1.0f,  0.0f],  [1.0f, 0.0f] },
-	{ [-0.5f, -0.5f,  0.5f],  [0.0f, -1.0f,  0.0f],  [0.0f, 0.0f] },
-	{ [ 0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [1.0f, 1.0f] },
-	{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 1.0f] },
-	{ [ 0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [1.0f, 0.0f] },
-	{ [-0.5f,  0.5f,  0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 0.0f] },
-	{ [-0.5f,  0.5f, -0.5f],  [0.0f,  1.0f,  0.0f],  [0.0f, 1.0f] }
+	{ vec3(-0.5f, -0.5f, -0.5f),  vec3(0.0f,  0.0f, -1.0f),  vec2(0.0f, 0.0f) },
+	{ vec3( 0.5f,  0.5f, -0.5f),  vec3(0.0f,  0.0f, -1.0f),  vec2(1.0f, 1.0f) },
+	{ vec3( 0.5f, -0.5f, -0.5f),  vec3(0.0f,  0.0f, -1.0f),  vec2(1.0f, 0.0f) },
+	{ vec3(-0.5f,  0.5f, -0.5f),  vec3(0.0f,  0.0f, -1.0f),  vec2(0.0f, 1.0f) },
+	{ vec3(-0.5f, -0.5f,  0.5f),  vec3(0.0f,  0.0f, 1.0f),   vec2(0.0f, 0.0f) },
+	{ vec3( 0.5f, -0.5f,  0.5f),  vec3(0.0f,  0.0f, 1.0f),   vec2(1.0f, 0.0f) },
+	{ vec3( 0.5f,  0.5f,  0.5f),  vec3(0.0f,  0.0f, 1.0f),   vec2(1.0f, 1.0f) },
+	{ vec3(-0.5f,  0.5f,  0.5f),  vec3(0.0f,  0.0f, 1.0f),   vec2(0.0f, 1.0f) },
+	{ vec3(-0.5f,  0.5f,  0.5f),  vec3(-1.0f,  0.0f, 0.0f),  vec2(1.0f, 0.0f) },
+	{ vec3(-0.5f,  0.5f, -0.5f),  vec3(-1.0f,  0.0f, 0.0f),  vec2(1.0f, 1.0f) },
+	{ vec3(-0.5f, -0.5f, -0.5f),  vec3(-1.0f,  0.0f, 0.0f),  vec2(0.0f, 1.0f) },
+	{ vec3(-0.5f, -0.5f,  0.5f),  vec3(-1.0f,  0.0f, 0.0f),  vec2(0.0f, 0.0f) },
+	{ vec3( 0.5f,  0.5f,  0.5f),  vec3(1.0f,  0.0f,  0.0f),  vec2(1.0f, 0.0f) },
+	{ vec3( 0.5f, -0.5f, -0.5f),  vec3(1.0f,  0.0f,  0.0f),  vec2(0.0f, 1.0f) },
+	{ vec3( 0.5f,  0.5f, -0.5f),  vec3(1.0f,  0.0f,  0.0f),  vec2(1.0f, 1.0f) },
+	{ vec3( 0.5f, -0.5f,  0.5f),  vec3(1.0f,  0.0f,  0.0f),  vec2(0.0f, 0.0f) },
+	{ vec3(-0.5f, -0.5f, -0.5f),  vec3(0.0f, -1.0f,  0.0f),  vec2(0.0f, 1.0f) },
+	{ vec3( 0.5f, -0.5f, -0.5f),  vec3(0.0f, -1.0f,  0.0f),  vec2(1.0f, 1.0f) },
+	{ vec3( 0.5f, -0.5f,  0.5f),  vec3(0.0f, -1.0f,  0.0f),  vec2(1.0f, 0.0f) },
+	{ vec3(-0.5f, -0.5f,  0.5f),  vec3(0.0f, -1.0f,  0.0f),  vec2(0.0f, 0.0f) },
+	{ vec3( 0.5f,  0.5f, -0.5f),  vec3(0.0f,  1.0f,  0.0f),  vec2(1.0f, 1.0f) },
+	{ vec3(-0.5f,  0.5f, -0.5f),  vec3(0.0f,  1.0f,  0.0f),  vec2(0.0f, 1.0f) },
+	{ vec3( 0.5f,  0.5f,  0.5f),  vec3(0.0f,  1.0f,  0.0f),  vec2(1.0f, 0.0f) },
+	{ vec3(-0.5f,  0.5f,  0.5f),  vec3(0.0f,  1.0f,  0.0f),  vec2(0.0f, 0.0f) },
+	{ vec3(-0.5f,  0.5f, -0.5f),  vec3(0.0f,  1.0f,  0.0f),  vec2(0.0f, 1.0f) }
 ];
 
-immutable uint[36] cubeIndices = [
+immutable Index[36] cubeIndices = [
 	0,  1,  2,  1,  0,  3,
 	4,  5,  6,  6,  7,  4,
 	8,  9,  10, 10, 11, 8,
@@ -207,7 +211,7 @@ auto genPoint() {
 }
 
 // Given a vertex array, returns a tuple (uniqued vertex array, indices array)
-auto createIndexBuffer(in Vertex[] vertices) {
+auto createIndexBuffer(Vertex[] vertices) pure {
 	Vertex[] newVertices;
 	uint[] indices;
 
@@ -226,13 +230,44 @@ auto createIndexBuffer(in Vertex[] vertices) {
 
 	foreach (v; vertices) {
 		int f = findSimilar(indices, newVertices, v);
-		if (f >= 0)
+		if (f >= 0) {
 			indices ~= f;
-		else {
+			// Average tangents and bitangents
+			newVertices[f].tangent = add(newVertices[f].tangent, v.tangent);
+			newVertices[f].bitangent = add(newVertices[f].bitangent, v.bitangent);
+		} else {
 			newVertices ~= v;
 			indices ~= cast(uint)newVertices.length - 1;
 		}
 	}
 
 	return tuple(newVertices, indices);
+}
+
+void calcTangents(Vertex[] vertices) {
+	for (int i = 0; i < vertices.length; i += 3) {
+		const v0 = vertices[i].position;
+		const v1 = vertices[i+1].position;
+		const v2 = vertices[i+2].position;
+		const uv0 = vertices[i].texCoords;
+		const uv1 = vertices[i+1].texCoords;
+		const uv2 = vertices[i+2].texCoords;
+
+		const dv1 = v1.add(neg(v0));
+		const dv2 = v2.add(neg(v0));
+		const duv1 = uv1.add(neg(uv0));
+		const duv2 = uv2.add(neg(uv0));
+
+		const r = 1f / (duv1.x * duv2.y - duv1.y * duv2.x);
+		const tangent = r * (dv1 * duv2.y - dv2 * duv1.y);
+		const bitangent = r * (dv2 * duv1.x - dv1 * duv2.x);
+
+		vertices[i].tangent = tangent;
+		vertices[i+1].tangent = tangent;
+		vertices[i+2].tangent = tangent;
+		// TODO: just store the bitangent's handedness, as per http://terathon.com/code/tangent.html
+		vertices[i].bitangent = bitangent;
+		vertices[i+1].bitangent = bitangent;
+		vertices[i+2].bitangent = bitangent;
+	}
 }
