@@ -27,7 +27,7 @@ void setCamera(World world, in Camera camera) {
 }
 
 /// Sets the "base" uniforms, which
-void setUniforms(World world, Shader shader) {
+void setBaseUniforms(World world, Shader shader) {
 	shader.uniforms["ambientLight.color"] = world.ambientLight.color;
 	shader.uniforms["ambientLight.strength"] = world.ambientLight.strength;
 	shader.uniforms["dirLight.direction"] = world.dirLight.direction;
@@ -54,7 +54,7 @@ void setLightVPUniform(Shader shader, DirLight light) {
 	shader.uniforms["lightVP"] = lightProj * lightView;
 }
 
-void setLightUniforms(Shader shader, PointLight light, DepthMap depthMap) {
+void setPointLightShadowUniforms(Shader shader, PointLight light, DepthMap depthMap) {
 	enum near = 0.5;
 	enum far = 25.0;
 	enum w = 50;

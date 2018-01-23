@@ -96,7 +96,7 @@ void renderLightDepthMap(World world, DepthMap[] depthMaps) {
 
 	world.setUniforms(depthShader);
 	depthShader.setLightVPUniform(world.dirLight);
-	//depthShader.setLightUniforms(world.pointLights[0], depthMap);
+	//depthShader.setPointLightShadowUniforms(world.pointLights[0], depthMap);
 
 	// Render scene
 	foreach (obj; world.objects) {

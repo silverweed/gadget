@@ -45,7 +45,7 @@ void drawWorld(World world) {
 
 		// Set uniforms
 		if (sh !in processedShaders) {
-			world.setUniforms(sh);
+			world.setBaseUniforms(sh);
 			setLightVPUniform(sh, world.dirLight);
 			processedShaders[sh] = true;
 		}
