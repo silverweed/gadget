@@ -10,6 +10,7 @@ import gadget.rendering.gl;
 import gadget.rendering.renderstate;
 import gadget.rendering.utils;
 import gadget.rendering.camera;
+import gadget.rendering.uniforms;
 import gadget.rendering.material;
 
 struct Transform {
@@ -73,19 +74,6 @@ void draw(in Mesh mesh, Shader shader) {
 	cull(wasCullEnabled);
 
 	glBindVertexArray(0);
-}
-
-void setCameraUniforms(Mesh mesh, Shader shader, in Camera camera) {
-	const t = mesh.transform;
-	const model = mat4.identity
-			.scale(t.scale.x, t.scale.y, t.scale.z)
-			.rotate(t.rotation.alpha, t.rotation.axis)
-			.translate(t.position);
-	shader.uniforms["viewPos"] = camera.position;
-	const vp = camera.projMatrix * camera.viewMatrix;
-	shader.uniforms["vp"] = vp;
-	shader.uniforms["mvp"] = vp * model;
-	shader.uniforms["far"] = camera.far;
 }
 
 private:

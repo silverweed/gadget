@@ -17,6 +17,7 @@ import gadget.rendering.shader;
 import gadget.rendering.renderstate;
 import gadget.rendering.mesh;
 import gadget.rendering.shadows;
+import gadget.rendering.uniforms;
 
 class World {
 	Skybox skybox;
@@ -45,7 +46,7 @@ void drawWorld(World world) {
 		// Set uniforms
 		if (sh !in processedShaders) {
 			world.setUniforms(sh);
-			setLightUniforms(sh, world.dirLight);
+			setLightVPUniform(sh, world.dirLight);
 			processedShaders[sh] = true;
 		}
 
@@ -54,40 +55,7 @@ void drawWorld(World world) {
 
 	// Draw the skybox
 	if (world.skybox.shader !is null) {
-		int depthMode;
-		glGetIntegerv(GL_DEPTH_FUNC, &depthMode);
-		glDepthFunc(GL_LEQUAL);
-		auto sh = world.skybox.shader;
-		sh.use();
-		sh.applyUniforms();
-		glBindVertexArray(world.skybox.cubeVao);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, world.skybox.cubemapVao);
-		drawElements(world.skybox.cubeVao, cubeIndices.length);
-		glDepthFunc(depthMode);
-	}
-}
-
-void setCamera(World world, in Camera camera, Shader shader = null) {
-	foreach (obj; world.objects) {
-		obj.setCameraUniforms((shader is null) ? obj.shader : shader, camera);
-	}
-	if (world.skybox.shader !is null) {
-		auto sh = world.skybox.shader;
-		sh.uniforms["vp"] = camera.projMatrix * mat4(mat3(camera.viewMatrix));
-	}
-}
-
-void setUniforms(World world, Shader shader) {
-	shader.uniforms["ambientLight.color"] = world.ambientLight.color;
-	shader.uniforms["ambientLight.strength"] = world.ambientLight.strength;
-	shader.uniforms["dirLight.direction"] = world.dirLight.direction;
-	shader.uniforms["dirLight.diffuse"] = world.dirLight.diffuse;
-	shader.uniforms["nPointLights"] = cast(GLuint)world.pointLights.length;
-	foreach (i, pl; world.pointLights) {
-		shader.uniforms["pointLight[%d].position".format(i)] = pl.position;
-		shader.uniforms["pointLight[%d].diffuse".format(i)] = pl.diffuse;
-		shader.uniforms["pointLight[%d].attenuation".format(i)] = pl.attenuation;
+		world.skybox.drawSkybox();
 	}
 }
 
@@ -185,4 +153,18 @@ void loadSkybox(World world, string[] textures) {
 		genCubemap(textures)
 	);
 	world.skybox.shader.uniforms["skybox"] = 0;
+}
+
+void drawSkybox(in Skybox skybox) {
+	int depthMode;
+	glGetIntegerv(GL_DEPTH_FUNC, &depthMode);
+	glDepthFunc(GL_LEQUAL);
+	auto sh = skybox.shader;
+	sh.use();
+	sh.applyUniforms();
+	glBindVertexArray(skybox.cubeVao);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.cubemapVao);
+	drawElements(skybox.cubeVao, cubeIndices.length);
+	glDepthFunc(depthMode);
 }

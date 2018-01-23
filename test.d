@@ -106,6 +106,8 @@ void main(string[] args) {
 		deltaTime = t - lastFrame;
 		lastFrame = t;
 
+		updateMouse(window, camera);
+
 		//moveCubes(cubes, deltaTime);
 
 		moveLights(world, t);
@@ -146,7 +148,6 @@ void main(string[] args) {
 		world.renderQuad();
 		//world.render(camera);
 
-		updateMouse(window, camera);
 		if (clock.isRunning())
 			fps.update(deltaTime);
 	});
@@ -271,7 +272,8 @@ auto createCubes(uint n) {
 	cubeModels[1] = mat4.identity.translate(0, 2, 0).rotate(0.0, vec3(1, 0, 0)).transposed();
 	cubeModels[2] = mat4.identity.translate(0, 0.5, 2).rotate(0.0, vec3(0, 1, 0)).transposed();
 	cubes.nInstances = cast(uint)cubeModels.length;
-	cubeModelsVbo = cubes.setData("aInstanceModel", cubeModels, GL_STREAM_DRAW); // this data will be updated every frame
+	// this data will be updated every frame
+	cubeModelsVbo = cubes.setData("aInstanceModel", cubeModels, GL_STREAM_DRAW);
 	return cubes;
 }
 

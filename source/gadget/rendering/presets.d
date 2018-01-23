@@ -9,7 +9,7 @@ import std.math;
 import gadget.rendering.shapes;
 import gadget.rendering.shader;
 import gadget.rendering.batch;
-import gadget.rendering.shadows;
+import gadget.rendering.shadowshaders;
 import gadget.rendering.defaultShaders;
 import derelict.sfml2;
 import derelict.opengl;

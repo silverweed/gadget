@@ -19,7 +19,7 @@ alias Uniform = Algebraic!(bool, GLint, GLuint, GLfloat, GLdouble, vec2, vec3, v
 
 class Shader {
 	const string name;
-	
+
 	debug string codestr;
 
 	Uniform[string] uniforms;
@@ -101,13 +101,17 @@ class Shader {
 		if (gsCode !is null) fillDeclaredUniforms(gsCode);
 	}
 
-	void applyUniforms() {
+	void applyUniforms() const
+	in {
+		assert(this.isCurrent(), "Called applyUniforms but shader " ~ name ~ " is not current!");
+	}
+	do {
 		foreach (k, v; uniforms) {
 			setUni(this, k, v);
 		}
 	}
 
-	debug void assertAllUniformsDefined() {
+	debug void assertAllUniformsDefined() const {
 		bool ok = true;
 		foreach (k; declaredUniforms) {
 			if (k !in uniforms) {
@@ -169,6 +173,12 @@ private:
 /// Sets `shader` as current.
 void use(in Shader shader) {
 	glUseProgram(shader.id);
+}
+
+bool isCurrent(in Shader shader) {
+	GLint id;
+	glGetIntegerv(GL_CURRENT_PROGRAM, &id);
+	return id == shader.id;
 }
 
 /// Sets a uniform to `val`.
