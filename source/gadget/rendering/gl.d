@@ -5,6 +5,8 @@ import std.stdio;
 import derelict.sfml2.system;
 import derelict.sfml2.window;
 import derelict.opengl;
+import derelict.opengl.extensions.arb_f;
+mixin(arbFramebufferSRGB);
 import gl3n.linalg;
 import gadget.rendering.presets;
 import gadget.rendering.camera;
@@ -62,6 +64,7 @@ auto newWindow(uint w, uint h, const char* title = "Unnamed Gadget App", uint fl
 	glDepthFunc(GL_LESS);
 	glDepthMask(GL_TRUE);
 	glCullFace(GL_BACK);
+	glEnable(GL_FRAMEBUFFER_SRGB);
 
 	return window;
 }

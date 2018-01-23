@@ -7,7 +7,7 @@ import stb_image;
 import derelict.opengl;
 
 /// Creates a texture from given path and returns its handle
-auto genTexture(string texture) {
+auto genTexture(string texture, bool srgb) {
 	uint tex;
 	glGenTextures(1, &tex);
 
@@ -16,7 +16,8 @@ auto genTexture(string texture) {
 		return -1;
 
 	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, img.format, img.width, img.height, 0, img.format, GL_UNSIGNED_BYTE, img.data);
+	glTexImage2D(GL_TEXTURE_2D, 0, srgb ? GL_SRGB : img.format, img.width, img.height,
+			0, img.format, GL_UNSIGNED_BYTE, img.data);
 	stderr.writeln("Loaded texture ", texture, ": ", img);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -44,7 +45,7 @@ auto genCubemap(string[] textures) {
 		auto img = loadImg(texture);
 		if (img.data == null)
 			return -1;
-		glTexImage2D(cast(uint)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, img.format,
+		glTexImage2D(cast(uint)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, GL_SRGB,
 				img.width, img.height, 0, img.format, GL_UNSIGNED_BYTE, img.data);
 		stbi_image_free(img.data);
 	}

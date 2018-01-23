@@ -14,6 +14,8 @@ import derelict.sfml2.system;
 import derelict.opengl;
 import gl3n.linalg;
 import derelict.opengl;
+import derelict.opengl.extensions.arb_f;
+mixin(arbFramebufferSRGB);
 
 enum WIDTH = 1920;
 enum HEIGHT = 1080;
@@ -190,6 +192,7 @@ void processInput(sfWindow *window, Camera camera, RenderState state) {
 
 bool doBloom = true;
 bool lightPOV = false;
+bool srgb = true;
 void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 	switch (event.type) {
 	case sfEvtResized:
@@ -211,6 +214,14 @@ void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 			break;
 		case sfKeyB:
 			doBloom = !doBloom;
+			break;
+		case sfKeyG:
+			srgb = !srgb;
+			writeln("srgb " ~ (srgb ? "enabled" : "disabled"));
+			if (srgb)
+				glEnable(GL_FRAMEBUFFER_SRGB);
+			else
+				glDisable(GL_FRAMEBUFFER_SRGB);
 			break;
 		default:
 			break;
@@ -238,9 +249,9 @@ int cubeModelsVbo;
 
 auto createCubes(uint n) {
 	auto cubes = makePreset(ShapeType.CUBE);
-	cubes.material.diffuse = genTexture("textures/box.jpg");
-	cubes.material.specular = genTexture("textures/box_specular.jpg");
-	cubes.material.normal = genTexture("textures/box_normal.jpg");
+	cubes.material.diffuse = genTexture("textures/box.jpg", true);
+	cubes.material.specular = genTexture("textures/box_specular.jpg", false);
+	cubes.material.normal = genTexture("textures/box_normal.jpg", false);
 	cubes.material.shininess = 16;
 	cubes.cullFace = true;
 	cubeModels = new mat4[n];
@@ -274,9 +285,9 @@ auto createGround() {
 	auto ground = new Batch(genShapeElem(vi[0], vi[1]),
 			quadIndices.length, presetShaders["defaultInstanced"], true);
 	//auto ground = makePreset(ShapeType.QUAD);
-	ground.material.diffuse = genTexture("textures/ground.jpg");
-	ground.material.specular = genTexture("textures/ground_specular.jpg");
-	ground.material.normal = genTexture("textures/flat_normal.jpg");
+	ground.material.diffuse = genTexture("textures/ground.jpg", true);
+	ground.material.specular = genTexture("textures/ground_specular.jpg", false);
+	ground.material.normal = genTexture("textures/flat_normal.jpg", false);
 	ground.material.shininess = 0;
 	ground.cullFace = true;
 	ground.nInstances = 1;
@@ -327,9 +338,9 @@ auto createWall() {
 		mat4.identity.scale(30, 5, 1).translate(0, 0, 10).transposed()
 	]);
 	wall.cullFace = true;
-	wall.material.diffuse = genTexture("textures/crystal.jpg");
-	wall.material.specular = genTexture("textures/crystal_specular.jpg");
-	wall.material.normal = genTexture("textures/crystal_normal.jpg");
+	wall.material.diffuse = genTexture("textures/crystal.jpg", true);
+	wall.material.specular = genTexture("textures/crystal_specular.jpg", false);
+	wall.material.normal = genTexture("textures/crystal_normal.jpg", false);
 	return wall;
 }
 
