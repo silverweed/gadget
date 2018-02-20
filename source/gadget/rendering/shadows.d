@@ -94,7 +94,7 @@ void renderLightDepthMap(World world, DepthMap[] depthMaps) {
 	auto depthShader = presetShaders["simpleDepth"];
 	//auto depthShader = presetShaders["cubemapDepth"];
 
-	world.setUniforms(depthShader);
+	world.setBaseUniforms(depthShader);
 	depthShader.setLightVPUniform(world.dirLight);
 	//depthShader.setPointLightShadowUniforms(world.pointLights[0], depthMap);
 

@@ -44,7 +44,7 @@ mixin(GenAmbientLight);
 /// Maximum number of point lights supported in default shaders
 enum MAX_POINT_LIGHTS = 10;
 
-enum MATERIAL_HEADER = `
+enum SHADER_HEADER = `
 #version 330 core
 
 #define MAX_POINT_LIGHTS ` ~to!string(MAX_POINT_LIGHTS) ~ `

@@ -154,7 +154,7 @@ enum f_calcPointShadow = q{
 
 //////////////////////////////////////////////
 
-enum vs_posNormTex = MATERIAL_HEADER ~ q{
+enum vs_posNormTex = SHADER_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 	layout (location = 1) in vec3 aNormal;
@@ -177,7 +177,7 @@ enum vs_posNormTex = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum fs_blinnPhong = MATERIAL_HEADER ~ q{
+enum fs_blinnPhong = SHADER_HEADER ~ q{
 
 	out vec4 fragColor;
 
@@ -206,7 +206,7 @@ enum fs_blinnPhong = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
+enum vs_posNormTexInstanced = SHADER_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 	layout (location = 1) in vec3 aNormal;
@@ -242,7 +242,7 @@ enum vs_posNormTexInstanced = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
+enum fs_blinnPhongInstanced = SHADER_HEADER ~ q{
 
 	layout (location = 0) out vec4 fragColor;
 	layout (location = 1) out vec4 brightColor;
@@ -296,7 +296,7 @@ enum fs_blinnPhongInstanced = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum vs_billboardQuad = MATERIAL_HEADER ~ q{
+enum vs_billboardQuad = SHADER_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 
@@ -315,7 +315,7 @@ enum vs_billboardQuad = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum vs_billboardQuadInstanced = MATERIAL_HEADER ~ q{
+enum vs_billboardQuadInstanced = SHADER_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 	layout (location = 1) in vec3 aColor;
@@ -338,7 +338,7 @@ enum vs_billboardQuadInstanced = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum gs_billboardQuad = MATERIAL_HEADER ~ q{
+enum gs_billboardQuad = SHADER_HEADER ~ q{
 
 	layout (points) in;
 	layout (triangle_strip, max_vertices = 4) out;
@@ -371,7 +371,7 @@ enum gs_billboardQuad = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum fs_billboardQuad = MATERIAL_HEADER ~ q{
+enum fs_billboardQuad = SHADER_HEADER ~ q{
 
 	in VS_OUT {
 		vec4 center;
@@ -389,7 +389,7 @@ enum fs_billboardQuad = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum vs_screenQuad = MATERIAL_HEADER ~ q{
+enum vs_screenQuad = SHADER_HEADER ~ q{
 
 	layout (location = 0) in vec2 aPos;
 	layout (location = 1) in vec2 aTexCoords;
@@ -402,7 +402,7 @@ enum vs_screenQuad = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum fs_screenQuad = MATERIAL_HEADER ~ q{
+enum fs_screenQuad = SHADER_HEADER ~ q{
 
 	out vec4 fragColor;
 
@@ -415,7 +415,7 @@ enum fs_screenQuad = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum fs_viewDepth = MATERIAL_HEADER ~ q{
+enum fs_viewDepth = SHADER_HEADER ~ q{
 
 	out vec4 fragColor;
 
@@ -429,7 +429,7 @@ enum fs_viewDepth = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum vs_skybox = MATERIAL_HEADER ~ q{
+enum vs_skybox = SHADER_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 
@@ -444,7 +444,7 @@ enum vs_skybox = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum fs_skybox = MATERIAL_HEADER ~ q{
+enum fs_skybox = SHADER_HEADER ~ q{
 
 	out vec4 fragColor;
 

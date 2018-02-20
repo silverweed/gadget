@@ -3,7 +3,7 @@ module gadget.rendering.shadowshaders;
 import gadget.rendering.material;
 
 // Transform the vertex into light's view space
-enum vs_simpleDepthInstanced = MATERIAL_HEADER ~ q{
+enum vs_simpleDepthInstanced = SHADER_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 	// (location = 1) aNormal;
@@ -21,12 +21,12 @@ enum vs_simpleDepthInstanced = MATERIAL_HEADER ~ q{
 };
 
 // Just fill the z-buffer with the depth info
-enum fs_simpleDepth = MATERIAL_HEADER ~ q{
+enum fs_simpleDepth = SHADER_HEADER ~ q{
 
 	void main() { /* gl_FragDepth = gl_FragCoord.z; */ }
 };
 
-enum vs_cubemapDepthInstanced = MATERIAL_HEADER ~ q{
+enum vs_cubemapDepthInstanced = SHADER_HEADER ~ q{
 
 	layout (location = 0) in vec3 aPos;
 	// (location = 1) aNormal;
@@ -42,7 +42,7 @@ enum vs_cubemapDepthInstanced = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum gs_cubemapDepth = MATERIAL_HEADER ~ q{
+enum gs_cubemapDepth = SHADER_HEADER ~ q{
 
 	layout (triangles) in;
 	layout (triangle_strip, max_vertices = 18) out;
@@ -64,7 +64,7 @@ enum gs_cubemapDepth = MATERIAL_HEADER ~ q{
 	}
 };
 
-enum fs_cubemapDepth = MATERIAL_HEADER ~ q{
+enum fs_cubemapDepth = SHADER_HEADER ~ q{
 
 	in vec4 fragPos;
 
