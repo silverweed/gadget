@@ -44,7 +44,8 @@ class Shader {
 
 	}
 
-	this(string vsCode, string fsCode, string gsCode = null, string name = "") {
+	this(string vsCode, string fsCode, string gsCode = null, string name = "",
+			string tscCode = null, string tseCode = null) {
 		this.name = name;
 
 		debug {
@@ -82,11 +83,33 @@ class Shader {
 			glCompileShader(gsId);
 			checkErr!"Geometry"(this, gsId);
 		}
+		GLint tscId = -1;
+		GLint tseId = -1;
+		if (tscCode != null) {
+			debug writefln("[%s] compiling tesselation control shader", name);
+			gsId = glCreateShader(GL_TESS_CONTROL_SHADER);
+			const char* tscCodePtr = tscCode.toStringz();
+			glShaderSource(tscId, 1, &tscCodePtr, null);
+			glCompileShader(tscId);
+			checkErr!"TessellationControl"(this, tscId);
+
+			assert(tseCode != null, name ~ ": Tess Control != null but Tess Eval == null!");
+			debug writefln("[%s] compiling tesselation evaluation shader", name);
+			gsId = glCreateShader(GL_TESS_EVALUATION_SHADER);
+			const char* tseCodePtr = tseCode.toStringz();
+			glShaderSource(tseId, 1, &tseCodePtr, null);
+			glCompileShader(tseId);
+			checkErr!"TessellationEvaluation"(this, tseId);
+		}
 		_id = glCreateProgram();
 		glAttachShader(_id, vsId);
 		glAttachShader(_id, fsId);
 		if (gsId >= 0)
 			glAttachShader(_id, gsId);
+		if (tscId >= 0) {
+			glAttachShader(_id, tscId);
+			glAttachShader(_id, tseId);
+		}
 		debug writefln("[%s] linking shader", name);
 		glLinkProgram(_id);
 		checkErr!"Program"(this, _id);
@@ -103,7 +126,8 @@ class Shader {
 
 	void applyUniforms() const
 	in {
-		assert(this.isCurrent(), "Called applyUniforms but shader " ~ name ~ " is not current!");
+		// FIXME
+		//assert(this.isCurrent(), "Called applyUniforms but shader " ~ name ~ " is not current!");
 	}
 	do {
 		foreach (k, v; uniforms) {
@@ -267,7 +291,7 @@ private void checkErr(string type)(in Shader shader, uint _id) {
 		glGetShaderiv(_id, GL_COMPILE_STATUS, &success);
 		if (!success) {
 			glGetShaderInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
-			stderr.writeln("[ ERR ] ", type, " Shader failed to compile: ", infoLog);
+			stderr.writeln("[ ERR ] ", type, " Shader ", shader.name, " failed to compile: ", infoLog);
 			stderr.writeln("  Shader code looks like this:");
 			stderr.writeln(shader.codestr);
 		}
@@ -275,7 +299,7 @@ private void checkErr(string type)(in Shader shader, uint _id) {
 		glGetProgramiv(_id, GL_LINK_STATUS, &success);
 		if (!success) {
 			glGetProgramInfoLog(_id, infoLog.length, NULL, infoLog.ptr);
-			stderr.writeln("[ ERR ] Shader failed to link: ", infoLog);
+			stderr.writeln("[ ERR ] Shader ", shader.name, " failed to link: ", infoLog);
 			stderr.writeln("  Shader code looks like this:");
 			stderr.writeln(shader.codestr);
 		}

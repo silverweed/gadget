@@ -19,7 +19,8 @@ alias Index = uint;
 enum ShapeType {
 	CUBE,
 	QUAD,
-	POINT
+	POINT,
+	ICO,
 }
 
 /// Utility module to create basic 2d or 3d shapes
@@ -130,6 +131,44 @@ immutable Index[36] cubeIndices = [
 	20, 21, 22, 23, 22, 24,
 ];
 
+immutable Vertex[12] icoElements = [
+	{ vec3(0, -0.525731, 0.850651), vec3(0.000000, -0.417775, 0.675974), vec2(0, 0) },
+	{ vec3(0.850651, 0, 0.525731), vec3(0.675973, 0.000000, 0.417775), vec2(0, 0) },
+	{ vec3(0.850651, 0, -0.525731), vec3(0.675973, -0.000000, -0.417775), vec2(0, 0) },
+	{ vec3(-0.850651, 0, -0.525731), vec3(-0.675973, 0.000000, -0.417775), vec2(1, 1) },
+	{ vec3(-0.850651, 0, 0.525731), vec3(-0.675973, -0.000000, 0.417775), vec2(1, 0) },
+	{ vec3(-0.525731, 0.850651, 0), vec3(-0.417775, 0.675974, 0.000000), vec2(1, 0) },
+	{ vec3(0.525731, 0.850651, 0), vec3(0.417775, 0.675973, -0.000000), vec2(1, 0) },
+	{ vec3(0.525731, -0.850651, 0), vec3(0.417775, -0.675974, 0.000000), vec2(1, 1) },
+	{ vec3(-0.525731, -0.850651, 0), vec3(-0.417775, -0.675974, 0.000000), vec2(0, 1) },
+	{ vec3(0, -0.525731, -0.850651), vec3(0.000000, -0.417775, -0.675973), vec2(0, 1) },
+	{ vec3(0, 0.525731, -0.850651), vec3(0.000000, 0.417775, -0.675974), vec2(0, 1) },
+	{ vec3(0, 0.525731, 0.850651), vec3(0.000000, 0.417775, 0.675973), vec2(1, 1) },
+];
+
+immutable Index[60] icoIndices = [
+	1, 2, 6,
+	1, 7, 2,
+	3, 4, 5,
+	4, 3, 8,
+	6, 5, 11,
+	5, 6, 10,
+	9, 10, 2,
+	10, 9, 3,
+	7, 8, 9,
+	8, 7, 0,
+	11, 0, 1,
+	0, 11, 4,
+	6, 2, 10,
+	1, 6, 11,
+	3, 5, 10,
+	5, 4, 11,
+	2, 7, 9,
+	7, 1, 0,
+	3, 9, 8,
+	4, 8, 0,
+];
+
 // Configures a vertex array object to contain a shape. Returns the vao index.
 // This shape is meant to be used with glDrawElements.
 auto genShapeElem(in Vertex[] vertices, in Index[] indices) {
@@ -211,6 +250,10 @@ auto genQuad() {
 	//return genShapeElem(quadElements, quadIndices);
 }
 
+auto genIco() {
+	return genShapeElem(icoElements, icoIndices);
+}
+
 auto genPoint() {
 	return genShape(pointVertices);
 }
@@ -247,7 +290,7 @@ void calcTangents(Vertex[] vertices) {
 
 // Given a vertex array, returns a tuple (uniqued vertex array, indices array).
 // NOTE: this function must be called *AFTER* `calcTangents`.
-auto createIndexBuffer(Vertex[] vertices) pure {
+auto createIndexBuffer(const Vertex[] vertices) pure {
 	Vertex[] newVertices;
 	uint[] indices;
 

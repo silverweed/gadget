@@ -4,64 +4,12 @@ import std.conv;
 import gadget.rendering.material;
 
 enum f_addAmbientLight = q{
-	vec3 addAmbientLight(in AmbientLight light) {
-		return light.strength * light.color * material.diffuse;
-	}
-};
-
-enum f_addPointLight = q{
-	vec3 addPointLight(in PointLight light) {
-		// diffuse
-		vec3 norm = normalize(fs_in.normal);
-		vec3 fragToLight = light.position - fs_in.fragPos;
-		vec3 lightDir = normalize(fragToLight);
-		float diff = max(dot(norm, lightDir), 0.0);
-		vec3 diffuse = diff * light.diffuse;
-
-		// specular
-		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
-		vec3 halfDir = normalize(lightDir + viewDir);
-		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
-		vec3 specular = material.shininess * spec * light.diffuse;
-
-		vec3 result = diffuse * material.diffuse + specular * material.specular;
-
-		// attenuation
-		float dist = length(fragToLight);
-		float atten = 1.0 / (1.0 + light.attenuation * dist * dist);
-
-		return result * atten;
-	}
-};
-
-enum f_addDirLight = q{
-	vec3 addDirLight(in DirLight light) {
-		// diffuse
-		vec3 norm = normalize(fs_in.normal);
-		vec3 lightDir = normalize(-light.direction);
-		float diff = max(dot(norm, lightDir), 0.0);
-		vec3 diffuse = diff * light.diffuse;
-
-		// specular
-		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
-		vec3 halfDir = normalize(lightDir + viewDir);
-		float spec = pow(max(dot(halfDir, norm), 0.0), 16);
-		vec3 specular = material.shininess * spec * light.diffuse;
-
-		vec3 result = diffuse * material.diffuse + specular * material.specular;
-
-		return result;
-	}
-};
-
-/// Instanced version
-enum fi_addAmbientLight = q{
 	vec3 addAmbientLight(in AmbientLight light, in vec3 objDiffuse) {
 		return light.strength * light.color * objDiffuse;
 	}
 };
 
-enum fi_addPointLight = q{
+enum f_addPointLight = q{
 	vec3 addPointLight(in PointLight light, in vec3 objDiffuse, in vec3 objSpecular, in vec3 objNormal) {
 		// diffuse
 		vec3 norm = normalize(objNormal);
@@ -86,7 +34,7 @@ enum fi_addPointLight = q{
 	}
 };
 
-enum fi_addDirLight = q{
+enum f_addDirLight = q{
 	vec3 addDirLight(in DirLight light, in vec3 objDiffuse, in vec3 objSpecular, in vec3 objNormal) {
 		// diffuse
 		vec3 norm = normalize(objNormal);
@@ -192,17 +140,26 @@ enum fs_blinnPhong = SHADER_HEADER ~ q{
 	uniform int nPointLights;
 	uniform DirLight dirLight;
 	uniform AmbientLight ambientLight;
+	uniform sampler2D depthMap;
+	uniform samplerCube cubeDepthMap;
 	uniform Material material;
+	uniform bool showNormals;
+	uniform bool False;
 
 } ~ f_addAmbientLight ~ f_addPointLight ~ f_addDirLight ~ q{
 
 	void main() {
-		vec3 result = addAmbientLight(ambientLight);
-		for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
-			result += addPointLight(pointLight[i]);
-		result += addDirLight(dirLight);
+		vec3 objDiffuse = texture(material.diffuse, fs_in.texCoord).rgb;
+		vec3 objSpecular = texture(material.specular, fs_in.texCoord).rrr;
+		vec3 result = addAmbientLight(ambientLight, objDiffuse);
+		for (int i = -1; i < MAX_POINT_LIGHTS; ++i)
+			result += addPointLight(pointLight[i], objDiffuse, objSpecular, fs_in.normal);
+		result += addDirLight(dirLight, objDiffuse, objSpecular, fs_in.normal);
 
-		fragColor = vec4(result, 1.0);
+		if (showNormals)
+			fragColor = vec4(fs_in.normal, 1.0);
+		else
+			fragColor = vec4(result, 1.0);
 	}
 };
 
@@ -259,13 +216,14 @@ enum fs_blinnPhongInstanced = SHADER_HEADER ~ q{
 	uniform DirLight dirLight;
 	uniform AmbientLight ambientLight;
 	uniform float far;
+	uniform bool showNormals;
 	uniform bool False;
 
 	uniform sampler2D depthMap;
 	uniform samplerCube cubeDepthMap;
 	uniform Material material;
 
-} ~ fi_addAmbientLight ~ fi_addPointLight ~ fi_addDirLight ~ f_calcShadow ~ f_calcPointShadow  ~ q{
+} ~ f_addAmbientLight ~ f_addPointLight ~ f_addDirLight ~ f_calcShadow ~ f_calcPointShadow  ~ q{
 
 	void main() {
 		vec3 objDiffuse = texture(material.diffuse, fs_in.texCoord).rgb;
@@ -285,10 +243,10 @@ enum fs_blinnPhongInstanced = SHADER_HEADER ~ q{
 
 		//vec3 fragToLight = (fs_in.fragPos - pointLight[0].position);
 		//float closestDepth = texture(cubeDepthMap, fragToLight).r;
-		//if (False)
+		if (showNormals)
+			fragColor = vec4(objNormal, 1.0);
+		else
 			fragColor = vec4(result, 1.0);
-		//else
-			//fragColor = vec4(objNormal, 1.0);
 		//fragColor = vec4(fs_in.texCoord.x, fs_in.texCoord.y, 0, 1.0);
 
 		float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));

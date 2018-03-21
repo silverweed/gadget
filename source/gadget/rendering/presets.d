@@ -69,6 +69,10 @@ auto makePreset(ShapeType type, Shader shader = presetShaders["defaultInstanced"
 		genFunc = &genQuad;
 		count = quadIndices.length;
 		break;
+	case ICO:
+		genFunc = &genIco;
+		count = icoIndices.length;
+		break;
 	case POINT:
 		indexed = false;
 		genFunc = &genPoint;

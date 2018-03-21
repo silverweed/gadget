@@ -85,6 +85,14 @@ void main(string[] args) {
 
 	world.objects ~= createWall();
 
+	{
+		auto ico = new Mesh(genIco(), icoIndices.length, presetShaders["default"], true);
+		ico.material.diffuse = genTexture("textures/box.jpg", true);
+		ico.material.specular = genTexture("textures/box_specular.jpg", false);
+		ico.transform.position = vec3(10, 5, 10);
+		world.objects ~= ico;
+	}
+
 	camera.position.z = 4;
 	camera.moveSpeed = 12f;
 	clock = new Chronometer();
@@ -215,6 +223,9 @@ void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 			break;
 		case sfKeyB:
 			doBloom = !doBloom;
+			break;
+		case sfKeyN:
+			state.showNormals = !state.showNormals;
 			break;
 		case sfKeyG:
 			srgb = !srgb;

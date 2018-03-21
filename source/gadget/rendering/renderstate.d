@@ -11,6 +11,8 @@ class RenderState {
 	vec4 clearColor = vec4(0, 0, 0, 1);
 	GLuint clearFlags = GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT;
 
+	bool showNormals = false;
+
 	static RenderState global;
 }
 

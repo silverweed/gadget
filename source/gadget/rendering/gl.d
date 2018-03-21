@@ -36,8 +36,8 @@ bool initRender() {
 	}
 
 	// Create openGL context
-	ctxSettings.majorVersion = 3;
-	ctxSettings.minorVersion = 3;
+	ctxSettings.majorVersion = 4;
+	ctxSettings.minorVersion = 0;
 	ctxSettings.attributeFlags = sfContextCore;
 	ctxSettings.depthBits = 24;
 	ctxSettings.antialiasingLevel = 4;
