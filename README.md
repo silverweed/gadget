@@ -19,6 +19,6 @@ Once you've set it up, follow these steps:
 
 If you're lucky, you should see something resembling this:
 
-![Gadget Preview](https://i.imgur.com/UR3EW8V.jpg)
+![Gadget Preview](https://i.imgur.com/UNUgFMh.jpg)
 
 If that's not the case...it's ok. Gadget is still super-WIP and things break and change all the time. Just come back later I guess :)
