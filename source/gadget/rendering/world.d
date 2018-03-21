@@ -103,10 +103,16 @@ void renderQuad(World world, uint target = 0) {
 	glClearColor(1, 1, 1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	auto screenQuadShader = presetShaders["screenQuad"];
+	const isDepthMode = RenderState.global.showMode == RenderState.ShowMode.DEPTH;
+	auto screenQuadShader = isDepthMode ? presetShaders["viewDepth"] : presetShaders["screenQuad"];
 	screenQuadShader.use();
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, world.renderTex.colorBufs[0]);
+	if (isDepthMode) {
+		screenQuadShader.uniforms["depthMap"] = 0;
+		glBindTexture(GL_TEXTURE_2D, world.depthMaps[0].texture);
+	} else {
+		glBindTexture(GL_TEXTURE_2D, world.renderTex.colorBufs[0]);
+	}
 	debug screenQuadShader.assertAllUniformsDefined();
 	screenQuadShader.applyUniforms();
 	drawElements(world.renderTex.quadVao, screenQuadIndices.length);

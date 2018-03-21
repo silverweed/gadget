@@ -85,13 +85,13 @@ void main(string[] args) {
 
 	world.objects ~= createWall();
 
-	{
-		auto ico = new Mesh(genIco(), icoIndices.length, presetShaders["default"], true);
-		ico.material.diffuse = genTexture("textures/box.jpg", true);
-		ico.material.specular = genTexture("textures/box_specular.jpg", false);
-		ico.transform.position = vec3(10, 5, 10);
-		world.objects ~= ico;
-	}
+	//{
+		//auto ico = new Mesh(genIco(), icoIndices.length, presetShaders["default"], true);
+		//ico.material.diffuse = genTexture("textures/box.jpg", true);
+		//ico.material.specular = genTexture("textures/box_specular.jpg", false);
+		//ico.transform.position = vec3(10, 5, 10);
+		//world.objects ~= ico;
+	//}
 
 	camera.position.z = 4;
 	camera.moveSpeed = 12f;
@@ -225,7 +225,16 @@ void evtHandler(in sfEvent event, Camera camera, RenderState state) {
 			doBloom = !doBloom;
 			break;
 		case sfKeyN:
-			state.showNormals = !state.showNormals;
+			if (state.showMode == RenderState.ShowMode.NORMALS)
+				state.showMode = RenderState.ShowMode.DEFAULT;
+			else
+				state.showMode = RenderState.ShowMode.NORMALS;
+			break;
+		case sfKeyH:
+			if (state.showMode == RenderState.ShowMode.DEPTH)
+				state.showMode = RenderState.ShowMode.DEFAULT;
+			else
+				state.showMode = RenderState.ShowMode.DEPTH;
 			break;
 		case sfKeyG:
 			srgb = !srgb;

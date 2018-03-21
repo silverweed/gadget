@@ -43,13 +43,13 @@ void setBaseUniforms(World world, Shader shader) {
 void setLightVPUniform(Shader shader, DirLight light) {
 	// XXX: These values are blindly guessed
 	enum near = 1.0;
-	enum far = 30.0;
-	enum w = 50;
-	enum h = 50;
+	enum far = 50.0;
+	enum w = 20;
+	enum h = 20;
 
 	const lightProj = mat4.orthographic(-w, w, -h, h, near, far);
 	//const lightProj = mat4.perspective(-w, w, -h, h, near, far);
-	const lightView = mat4.look_at(-14 * light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
+	const lightView = mat4.look_at(-10 * light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
 
 	shader.uniforms["lightVP"] = lightProj * lightView;
 }

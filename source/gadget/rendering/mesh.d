@@ -96,7 +96,7 @@ void setDefaultUniforms(in Mesh mesh, Shader shader) {
 	shader.setMaterialUniforms(mesh.material);
 	shader.uniforms["model"] = model;
 	debug shader.uniforms["False"] = false;
-	shader.uniforms["showNormals"] = RenderState.global.showNormals;
+	shader.uniforms["showNormals"] = RenderState.global.showMode == RenderState.ShowMode.NORMALS;
 	int texNum = 0;
 	shader.uniforms["depthMap"] = texNum++;
 	shader.uniforms["cubeDepthMap"] = texNum++;

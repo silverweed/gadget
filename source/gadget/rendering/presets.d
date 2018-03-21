@@ -42,6 +42,9 @@ private class PresetShaderCache {
 		case "screenQuad":
 			shader = new Shader(vs_screenQuad, fs_screenQuad, null, name);
 			break;
+		case "viewDepth":
+			shader = new Shader(vs_screenQuad, fs_viewDepth, null, name);
+			break;
 		case "skybox":
 			shader = new Shader(vs_skybox, fs_skybox, null, name);
 			break;
