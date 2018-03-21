@@ -32,7 +32,7 @@ class Mesh {
 	this(GLuint vao, GLuint count, Shader shader, bool isIndexed = false) {
 		this.vao = vao;
 		this.shader = shader;
-		material.shininess = 0;
+		material.shininess = 1;
 		if (isIndexed) {
 			indexCount = count;
 			drawFunc = (in Mesh shape) {
@@ -53,6 +53,7 @@ protected:
 		import std.algorithm;
 		assert(transform.rotation.magnitude_squared().approxEqual(1, float.epsilon), "rotation magnitude is not 1!");
 		assert(!material.shininess.isNaN, "material shininess is NaN!");
+		assert(material.shininess != 0, "material shininess is 0!");
 	}
 }
 
@@ -95,6 +96,7 @@ void setDefaultUniforms(in Mesh mesh, Shader shader) {
 			.translate(t.position);
 	shader.setMaterialUniforms(mesh.material);
 	shader.uniforms["model"] = model;
+	shader.uniforms["heightScale"] = 0.1;
 	debug shader.uniforms["False"] = false;
 	shader.uniforms["showNormals"] = RenderState.global.showMode == RenderState.ShowMode.NORMALS;
 	int texNum = 0;
@@ -103,4 +105,5 @@ void setDefaultUniforms(in Mesh mesh, Shader shader) {
 	shader.uniforms["material.diffuse"] = texNum++;
 	shader.uniforms["material.specular"] = texNum++;
 	shader.uniforms["material.normal"] = texNum++;
+	shader.uniforms["material.displacement"] = texNum++;
 }

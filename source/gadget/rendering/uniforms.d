@@ -26,7 +26,7 @@ void setCamera(World world, in Camera camera) {
 	}
 }
 
-/// Sets the "base" uniforms, which
+/// Sets the "base" uniforms
 void setBaseUniforms(World world, Shader shader) {
 	shader.uniforms["ambientLight.color"] = world.ambientLight.color;
 	shader.uniforms["ambientLight.strength"] = world.ambientLight.strength;
@@ -52,6 +52,7 @@ void setLightVPUniform(Shader shader, DirLight light) {
 	const lightView = mat4.look_at(-10 * light.direction, vec3(0, 0, 0), vec3(0, 1, 0));
 
 	shader.uniforms["lightVP"] = lightProj * lightView;
+	shader.uniforms["lightPos"] = -10*light.direction;
 }
 
 void setPointLightShadowUniforms(Shader shader, PointLight light, DepthMap depthMap) {

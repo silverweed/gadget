@@ -198,6 +198,9 @@ auto genShapeElem(in Vertex[] vertices, in Index[] indices) {
 	// Tangents
 	glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, Vertex.sizeof, cast(void*)Vertex.tangent.offsetof);
 	glEnableVertexAttribArray(7);
+	// Bitangents
+	glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, Vertex.sizeof, cast(void*)Vertex.bitangent.offsetof);
+	glEnableVertexAttribArray(8);
 
 	// Unbind the buffers
 	glBindBuffer(GL_ARRAY_BUFFER, 0);

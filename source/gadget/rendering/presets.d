@@ -27,6 +27,9 @@ private class PresetShaderCache {
 		case "defaultInstanced":
 			shader = new Shader(vs_posNormTexInstanced, fs_blinnPhongInstanced, null, name);
 			break;
+		case "parallaxInstanced":
+			shader = new Shader(vs_parallaxInstanced, fs_blinnPhongParallaxInstanced, null, name);
+			break;
 		case "billboardQuad":
 			shader = new Shader(vs_billboardQuad, fs_billboardQuad, gs_billboardQuad, name);
 			break;

@@ -10,6 +10,7 @@ enum GenMaterial = q{
 		sampler2D diffuse;
 		sampler2D specular;
 		sampler2D normal;
+		sampler2D displacement;
 		float shininess;
 	};
 };

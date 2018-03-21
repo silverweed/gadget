@@ -64,7 +64,7 @@ void main(string[] args) {
 	world.objects ~= ground;
 	world.ambientLight = AmbientLight(
 		vec3(1, 1, 1), // color
-		0.05,          // strength
+		0.10,          // strength
 	);
 	world.dirLight = DirLight(
 		-vec3(0.4, 0.4, 0.4), // direction
@@ -354,12 +354,16 @@ auto createWall() {
 	calcTangents(wallVertices);
 	auto vi = createIndexBuffer(wallVertices);
 	auto wall = new Batch(genShapeElem(vi[0], vi[1]),
+			//cubeIndices.length, presetShaders["parallaxInstanced"], true);
 			cubeIndices.length, presetShaders["defaultInstanced"], true);
 	//auto wall = makePreset(ShapeType.CUBE);
 	wall.setData("aInstanceModel", [
 		mat4.identity.scale(30, 5, 1).translate(0, 0, 10).transposed()
 	]);
 	wall.cullFace = true;
+	//wall.material.diffuse = genTexture("textures/bricks.jpg", true);
+	//wall.material.normal = genTexture("textures/bricks_normal.jpg", false);
+	//wall.material.displacement = genTexture("textures/bricks_disp.jpg", false);
 	wall.material.diffuse = genTexture("textures/crystal.jpg", true);
 	wall.material.specular = genTexture("textures/crystal_specular.jpg", false);
 	wall.material.normal = genTexture("textures/crystal_normal.jpg", false);
