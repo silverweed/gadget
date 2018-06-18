@@ -6,6 +6,7 @@ import derelict.sfml2.system;
 import derelict.sfml2.window;
 import derelict.opengl;
 import derelict.opengl.extensions.arb_f;
+import derelict.util.exception;
 mixin(arbFramebufferSRGB);
 import gl3n.linalg;
 import gadget.rendering.presets;
@@ -15,6 +16,7 @@ import gadget.rendering.renderstate;
 private immutable string[] sfmlSearchPath = [
 	"/usr/lib/x86_64-linux-gnu/",
 	"/usr/lib/",
+	"/usr/local/lib/",
 ];
 
 sfContextSettings ctxSettings;
@@ -25,14 +27,31 @@ private bool running = true;
 bool initRender() {
 	// Load shared C libraries
 	DerelictGL3.load();
+	bool ok = false;
 	for (int i = 0; i < sfmlSearchPath.length; ++i) {
+		import std.file;
+		if (!exists(sfmlSearchPath[i] ~ "libcsfml-system.so.2.4"))
+			continue;
+
 		try {
 			DerelictSFML2System.load(sfmlSearchPath[i] ~ "libcsfml-system.so.2.4");
 			DerelictSFML2Window.load(sfmlSearchPath[i] ~ "libcsfml-window.so.2.4");
+			ok = true;
 			break;
-		} catch (Exception e) {
+		} catch (SharedLibLoadException e) {
+			writeln("SharedLibLoadException: " ~ e.msg);
+			continue;
+		} catch (SymbolLoadException e) {
+			writeln("SymbolLoadException: " ~ e.msg);
 			continue;
 		}
+	}
+
+	if (!ok) {
+		auto err = "Could not load libcsfml-{window,system}.so.2.4! Not found in paths: ";
+		foreach (s; sfmlSearchPath)
+			err ~= "\n\t" ~ s;
+		throw new Exception(err);
 	}
 
 	// Create openGL context

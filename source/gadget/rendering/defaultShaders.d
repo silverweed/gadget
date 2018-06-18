@@ -21,7 +21,7 @@ enum f_addPointLight = q{
 		// specular
 		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
 		vec3 halfDir = normalize(lightDir + viewDir);
-		float spec = pow(max(dot(halfDir, norm), 0.0), material.shininess);
+		float spec = pow(max(dot(halfDir, norm), 0.0), max(1.0, material.shininess));
 		vec3 specular = objSpecular * spec * light.diffuse;
 
 		vec3 result = diffuse + specular;
@@ -45,7 +45,7 @@ enum f_addDirLight = q{
 		// specular
 		vec3 viewDir = normalize(viewPos - fs_in.fragPos);
 		vec3 halfDir = normalize(lightDir + viewDir);
-		float spec = pow(max(dot(halfDir, norm), 0.0), material.shininess);
+		float spec = pow(max(dot(halfDir, norm), 0.0), max(1.0, material.shininess));
 		vec3 specular = objSpecular * spec * light.diffuse;
 
 		vec3 result = diffuse + specular;
