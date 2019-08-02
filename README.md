@@ -1,4 +1,4 @@
-# Gadget lib
+# Gadget
 ![Gadget](https://i.imgur.com/Yi7zzbi.png)
 
 Experimenting GL rendering + physics with D.
